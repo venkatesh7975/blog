@@ -1,0 +1,119 @@
+recap
+
+1)host fullstack (frontend+backend)
+
+2)use cloud db in the backend
+3)push your backend code to git repo
+4)import this backend project on render
+   build command:npm install
+   start command: node index.js
+   give your .env data
+   deploy and then you will get backend url
+
+5)replace the old url with this url (frontend)
+
+
+
+
+
+
+
+
+
+blog(fullstack)
+features:registration,login,
+displaying posts,creating posts,searching posts,
+sorting etc;
+
+
+
+
+
+js:functions,array methods,destructuring,
+   basic conditions,
+project setup:
+react:componets,props,state,useState,useEffect,
+      routing(dynamic routing,protected routes)
+      navigation,
+      axios request(get,post,put,delete)
+expressjs:how to create server ,
+          how to connect db to server
+     	  how to create apis(get,post,put,delete)
+ 	  how to test apis
+ 	  middleware
+
+
+
+
+
+
+backend:
+1)creating server,  create apis-->db(schema)
+2)users (collections) -->(username,email,password,profile,other urls);
+  post(collection)---->(post title,post description,tags,author,category);
+  comments(collection)--->(postid,userid,comment);
+3)api design 
+  //public api 
+  app.get("/blogs",async function(){})
+	--->to retrieve all the blog data from db
+ 	--->send the blog data to client 
+	-->handle error .
+
+   //private api
+  app.get("/blogs",authMiddleware,async function(){})
+	--->to retrieve all the blog data from db
+ 	--->send the blog data to client 
+	-->handle error .
+
+
+  app.post("/createpost",authmiddleware,async function(req,res){})
+	---->read the data from req.body
+	--->store the data
+        -->basic validation and error handling
+
+//api for getting single blog based on id
+  app.get("/blogs/:id",authMiddleware,async function(req,res){})
+	--->read the id req.params 
+	--->retireve the single blog from database 
+	--->send response to client
+ 	-->basic validations and error handling 
+
+
+	app.post("/login",async function (req,res){})
+ 	-->read the data from req.body 
+    	--->first check whether the user exist 
+	-->if user exist then check password and basic validation
+
+
+
+
+app.post("/register",async function (req,res){})
+ 	-->read the data from req.body 
+    	--->first check whether the user exist 
+	-->if user exist then basic validation
+	-->if user not exist ,encrypt password ,then 
+	store email,and encrypted in db;
+
+
+   app.get("/profile/:id",authMiddleware,async funciton (req,res){})
+	-->read the id req.params
+         -->get the user details from the db,and send to cliet
+	-->basic error handling
+
+
+
+
+
+
+
+
+ 
+
+ 
+	
+
+
+
+
+
+
