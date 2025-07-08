@@ -28,7 +28,7 @@ export default function Register() {
     setPassword(e.target.value);
   }
   return (
-    <div>
+    <div className="sm:bg-amber-200 h-200 text-center  lg:bg-amber-800">
       <form onSubmit={onFormRegister}>
         <input
           type="email"
@@ -42,7 +42,9 @@ export default function Register() {
           placeholder="Password"
           onChange={onPasswordChange}
         />
-        <button type="submit">Register</button>
+        <button type="submit" className="md:text-blue-700">
+          Register
+        </button>
       </form>
       <p>
         Already have an account,please <a href="/login">login</a>{" "}

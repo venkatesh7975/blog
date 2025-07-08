@@ -3,7 +3,12 @@ import Post from "../models/Post.js";
 // GET /posts?search=&sort=&page=&limit=
 export const getAllPosts = async (req, res) => {
   try {
-    const { search = "", sort = "-createdAt", page = 1, limit = 10 } = req.query;
+    const {
+      search = "",
+      sort = "-createdAt",
+      page = 1,
+      limit = 10,
+    } = req.query;
 
     const query = {};
     if (search) {
@@ -20,25 +25,29 @@ export const getAllPosts = async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
-      .populate("userId", "username email");
+      .populate("userId", "email");
 
     const totalPosts = await Post.countDocuments(query);
     const totalPages = Math.ceil(totalPosts / limit);
 
     res.json({ posts, totalPosts, totalPages, currentPage: parseInt(page) });
   } catch (error) {
-    res.status(500).json({ message: "Failed to get posts", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to get posts", error: error.message });
   }
 };
 
 // GET /posts/:id
 export const getSinglePost = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id).populate("userId", "username email");
+    const post = await Post.findById(req.params.id).populate("userId", "email");
     if (!post) return res.status(404).json({ message: "Post not found" });
     res.json(post);
   } catch (error) {
-    res.status(500).json({ message: "Failed to get post", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to get post", error: error.message });
   }
 };
 
@@ -63,6 +72,7 @@ export const updatePost = async (req, res) => {
   try {
     const { title, content } = req.body;
     const post = await Post.findById(req.params.id);
+    
     if (!post) return res.status(404).json({ message: "Post not found" });
 
     // Optional: check if the user owns the post
