@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -7,6 +8,7 @@ import postRoutes from "./routes/postRoutes.js";
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 // Use more specific base paths for clarity
 app.use("/api", userRoutes);
