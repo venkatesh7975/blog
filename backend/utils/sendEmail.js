@@ -28,4 +28,3 @@ export default function sendMail(email) {
     console.log("Email sent: " + info.response);
   });
 }
-
