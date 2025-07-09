@@ -9,6 +9,7 @@ export const getAllPosts = async (req, res) => {
       page = 1,
       limit = 10,
     } = req.query;
+    console.log(req.query);
 
     const query = {};
     if (search) {
@@ -18,6 +19,8 @@ export const getAllPosts = async (req, res) => {
         { content: { $regex: search, $options: "i" } },
       ];
     }
+    console.log(query);
+    console.log(query.$or);
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
