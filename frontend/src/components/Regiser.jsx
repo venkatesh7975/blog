@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -6,6 +6,16 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
+  const token = localStorage.getItem("token");
+  useEffect(() => {
+    if (token) {
+      navigate("/posts");
+      return; // if the user is already logged in, redirect to the posts page
+    }
+  }, [token]); // only run the effect if the token changes
+ 
+
 
   async function onFormRegister(e) {
     e.preventDefault();

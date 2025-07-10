@@ -43,6 +43,7 @@ export const getAllPosts = async (req, res) => {
 
 // GET /posts/:id
 export const getSinglePost = async (req, res) => {
+
   try {
     const post = await Post.findById(req.params.id).populate("userId", "email");
     if (!post) return res.status(404).json({ message: "Post not found" });
@@ -101,7 +102,7 @@ export const deletePost = async (req, res) => {
     if (!post) return res.status(404).json({ message: "Post not found" });
 
     // Optional: check if the user owns the post
-    if (post.userId.toString() !== req.user._id.toString()) {
+    if (!post.userId.equals(req.user._id)) {
       return res.status(403).json({ message: "You don't have permission to delete this post" });
     }
 

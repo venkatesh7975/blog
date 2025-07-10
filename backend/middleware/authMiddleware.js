@@ -6,6 +6,8 @@ const authMiddleware = (req, res, next) => {
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.split(" ")[1];
     try {
+
+      console.log("b", req.user);
       const decoded = jwt.verify(token, "secret_key"); // verify the token using secret key
 
       req.user = { _id: decoded.id }; // Attach user ID to request

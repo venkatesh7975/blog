@@ -25,6 +25,7 @@ export async function onRegister(req, res) {
 }
 
  export  async function onLogin(req, res) {
+  console.log(req)
   const { email, password } = req.body; //reading the data from client(req.body)
   const user = await User.findOne({ email }); //check whether user exist or not ;
   if (user) {

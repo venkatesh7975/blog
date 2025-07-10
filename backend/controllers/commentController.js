@@ -43,9 +43,13 @@ export const updateComment = async (req, res) => {
     const comment = await Comment.findById(id);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
-    if (comment.userId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Not authorized to update this comment" });
-    }
+if (!comment.userId || !userId || !comment.userId.equals(userId)) {
+  return res
+    .status(403)
+    .json({ message: "Not authorized to update this comment" });
+}
+
+
 
     comment.content = content ?? comment.content;
     const updatedComment = await comment.save();
@@ -65,9 +69,10 @@ export const deleteComment = async (req, res) => {
     const comment = await Comment.findById(id);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
-    if (comment.userId.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Not authorized to delete this comment" });
-    }
+  if (!comment.userId || !userId || !comment.userId.equals(userId)) {
+  return res.status(403).json({ message: "Not authorized to delete this comment" });
+}
+
 
     await comment.deleteOne();
     res.json({ message: "Comment deleted" });

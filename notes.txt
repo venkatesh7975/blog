@@ -1,0 +1,38 @@
+features:
+display all the posts:request -->response-->display response
+ 
+
+frontend:
+   posts component-->/posts-->axios.get("api url");
+				useState,useEffect,map
+	handle response 
+
+backend:
+   app.get("/getAllpost",async function(req,res){
+logic})  //->retrieve the posts data from db,
+            send the response
+
+
+
+
+
+
+consoel.log(req.user)//undefined
+	req.user({_id.2342})
+        console.log(req.user)
+        {_id:sdfsdf}.
+
+
+		req={ .{},{},....................}
+		req.user={id:decoded.id}
+
+
+
+
+
+		let obj={}
+		obj.name="sdfsdf"
+		console.log(obj)//{name:sdfsdf}
+
+
+https://www.flipkart.com/ajy/~cs-7d5gd723be/pr?sid=ajy&collection-tab-name=BBD+2024+Noise+Smartwatches&pageCriteria=default&param=5781&hpid=Y8tEWNmThOXtFwc8qea15Kp7_Hsxr70nj65vMAAFKlc%3D&ctx=eyJjYXJkQ29udGV4dCI6eyJhdHRyaWJ1dGVzIjp7InZhbHVlQ2FsbG91dCI6eyJtdWx0aVZhbHVlZEF0dHJpYnV0ZSI6eyJrZXkiOiJ2YWx1ZUNhbGxvdXQiLCJpbmZlcmVuY2VUeXBlIjoiVkFMVUVfQ0FMTE9VVCIsInZhbHVlcyI6WyJGcm9tIOKCuTEsMDk5Il0sInZhbHVlVHlwZSI6Ik1VTFRJX1ZBTFVFRCJ9fSwiaGVyb1BpZCI6eyJzaW5nbGVWYWx1ZUF0dHJpYnV0ZSI6eyJrZXkiOiJoZXJvUGlkIiwiaW5mZXJlbmNlVHlwZSI6IlBJRCIsInZhbHVlIjoiU01XR0dLVDVGWVFITlJKUCIsInZhbHVlVHlwZSI6IlNJTkdMRV9WQUxVRUQifX0sInRpdGxlIjp7Im11bHRpVmFsdWVkQXR0cmlidXRlIjp7ImtleSI6InRpdGxlIiwiaW5mZXJlbmNlVHlwZSI6IlRJVExFIiwidmFsdWVzIjpbIk5vaXNlIFNtYXJ0d2F0Y2hlcyJdLCJ2YWx1ZVR5cGUiOiJNVUxUSV9WQUxVRUQifX19fX0%3D&p%5B%5D=facets.price_range.from%3DMin&p%5B%5D=facets.price_range.to%3D5000&sort=price_asc

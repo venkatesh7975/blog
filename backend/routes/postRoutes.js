@@ -11,7 +11,7 @@ import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 // Get all posts (public)
-router.get("/", authMiddleware,getAllPosts);
+router.get("/", getAllPosts);
 
 // Get single post by id (public)
 router.get("/:id", getSinglePost);
