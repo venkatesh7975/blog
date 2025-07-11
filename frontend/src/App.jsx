@@ -8,6 +8,7 @@ import CreateForm from "./components/CreateForm";
 import SinglePost from "./components/SinglePost";
 import Navigation from "./components/Navigation";
 import Profile from "./components/Profile";
+import NotFound from "./components/NotFound";
 
 export default function App() {
   return (
@@ -44,7 +45,7 @@ export default function App() {
               }
             />
 
-            <Route path="*" element={<h1>Page not found</h1>} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
       </div>

@@ -16,7 +16,7 @@ export default function Posts() {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get("http://localhost:3002/api/posts", {
+      const response = await axios.get("http://localhost:3002/posts", {
         params: { page, search, sort },
       });
       setPosts(response.data.posts);
@@ -137,7 +137,23 @@ export default function Posts() {
               key={post._id}
               className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow duration-200 overflow-hidden"
             >
-              <Link to={`/posts/${post._id}`} className="block">
+              <Link to={`/posts/${post._id}`} target="_blank" rel="noopener noreferrer" className="block">
+                {/* Post Image */}
+                {post.images && post.images.length > 0 && (
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={`http://localhost:3002${post.images[0]}`}
+                      alt={post.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                    />
+                    {post.images.length > 1 && (
+                      <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                        +{post.images.length - 1} more
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-3 line-clamp-2 hover:text-blue-600 transition-colors">
                     {post.title}
@@ -146,11 +162,34 @@ export default function Posts() {
                     {truncateText(post.content)}
                   </p>
                   <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span className="flex items-center">
-                      <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                      {post.userId?.email || "Anonymous"}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      {post.userId?.profilePicture ? (
+                        <img
+                          src={`http://localhost:3002${post.userId.profilePicture}`}
+                          alt="Profile"
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                          {post.userId?.email?.charAt(0).toUpperCase() || "U"}
+                        </div>
+                      )}
+                      <span>{post.userId?.email || "Anonymous"}</span>
+                    </div>
                     <span>{formatDate(post.createdAt)}</span>
+                  </div>
+                  
+                  {/* Post Stats */}
+                  <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
+                    <span className="flex items-center">
+                      <span className="mr-1">❤️</span>
+                      {post.likes?.length || 0}
+                    </span>
+                    <span className="flex items-center">
+                      <span className="mr-1">💬</span>
+                      {/* You can add comment count here if available */}
+                      0
+                    </span>
                   </div>
                 </div>
               </Link>

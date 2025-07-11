@@ -1,294 +1,240 @@
-# 📝 Blog App API Overview (Fullstack Project)
+# Blog Application - Full Stack
 
-This document gives a clean overview of all APIs for your Blog App, their functionality, and the React concepts used on the frontend.
+A modern blog application built with React frontend and Node.js/Express backend with MongoDB database.
 
----
+## Features
 
-## 📦 Backend API Endpoints
+### 🔐 Authentication & User Management
+- User registration and login
+- JWT token-based authentication
+- Protected routes
+- User profile management
+- Profile picture upload and management
 
----
+### 📝 Post Management
+- Create, read, update, and delete posts
+- Rich text content with character limits
+- Multiple image upload support (up to 5 images per post)
+- Image preview and management
+- Post editing with inline editing
+- Post deletion with confirmation
 
-### ✅ **GET /**
-📌 Display all blogs on homepage  
-- **Functionality**: Fetch all blogs from DB  
-- **Frontend Concepts**:  
-  - `axios.get(url)`  
-  - `map()`  
-  - `useState`, `useEffect`  
+### 🖼️ Image Upload System
+- **Profile Pictures**: Users can upload profile pictures with preview
+- **Post Images**: Support for multiple images per post (up to 5)
+- **Image Management**: Delete individual images from posts
+- **File Validation**: Only image files (PNG, JPG, GIF) up to 5MB each
+- **Preview System**: Real-time image previews before upload
 
----
+### 💬 Comments System
+- Add comments to any post
+- Delete comments (authors only)
+- Real-time comment updates
+- Comment author identification
 
-### ✅ **GET /blogs**
-📌 Display all blogs (with search + sort)  
-- **Functionality**:  
-  - Get all blog posts  
-  - Supports query params: `?search=react&sort=latest&page=1&limit=10`
-- **Backend Concepts**:  
-  - `req.query`, `find()`, `sort()`, `skip()`, `limit()`  
-  - Error handling middleware  
+### ❤️ Social Features
+- Like/unlike posts
+- Follow/unfollow users
+- Share posts (copy URL to clipboard)
+- User profiles with post history
 
----
+### 🔍 Search & Navigation
+- Search posts by title or content
+- Sort posts by date, title, etc.
+- Pagination for large post lists
+- Responsive design for all devices
 
-### ✅ **POST /createpost**
-📌 Create a new blog post (form submission)  
-- **Functionality**:  
-  - User fills form → Submit data → Save in DB  
-  - Validate `title`, `description`, etc.  
-- **Frontend Concepts**:  
-  - `axios.post(url, data)`  
-  - Form handling: `useState`, `onChange`, `onSubmit`
-- **Backend Concepts**:  
-  - Auth Middleware → `req.user.id`  
-  - `new Blog({...}).save()`
+### 🎨 Modern UI/UX
+- Clean, modern interface with Tailwind CSS
+- Responsive design
+- Loading states and error handling
+- Smooth animations and transitions
+- Intuitive navigation
 
----
+## Tech Stack
 
-### ✅ **GET /blogs/:id**
-📌 Display single blog by id  
-- **Functionality**:  
-  - Fetch blog details using `req.params.id`  
-  - Populate author info
-- **Frontend Concepts**:  
-  - `axios.get(url/:id)`  
-  - `useParams`, `useEffect`, `useState`
-- **Backend Concepts**:  
-  - `populate()`
+### Frontend
+- **React** - UI framework
+- **React Router** - Navigation
+- **Axios** - HTTP client
+- **Tailwind CSS** - Styling
+- **Vite** - Build tool
 
----
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - Database
+- **Mongoose** - ODM
+- **JWT** - Authentication
+- **Multer** - File upload handling
+- **bcrypt** - Password hashing
 
-### ✅ **POST /login**
-📌 Login user  
-- **Functionality**:  
-  - Check user → Verify password → Return JWT
-- **Frontend Concepts**:  
-  - `axios.post(url, data)`  
-  - Store token in `localStorage`
-- **Backend Concepts**:  
-  - `bcrypt.compare()`, `jwt.sign()`
+## Installation & Setup
 
----
+### Prerequisites
+- Node.js (v14 or higher)
+- MongoDB (running locally or cloud instance)
+- npm or yarn
 
-### ✅ **POST /register**
-📌 Register new user  
-- **Functionality**:  
-  - Check if user exists → Hash password → Save user  
-- **Backend Concepts**:  
-  - `bcrypt.hash()`, `new User({...}).save()`
+### Backend Setup
 
----
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
 
-### ✅ **GET /profile/:id**
-📌 Get user profile details  
-- **Functionality**:  
-  - Fetch user by `req.params.id`  
-  - Return username, email, profile, posts
-- **Frontend Concepts**:  
-  - `axios.get(url/:id)`  
-  - Dynamic Routing: `useParams`
-- **Backend Concepts**:  
-  - Auth Middleware  
-  - `User.findById()`, `populate('posts')`
+2. Install dependencies:
+```bash
+npm install
+```
 
----
+3. Start the server:
+```bash
+npm start
+```
 
-### ✅ **PUT /updatepost/:id**
-📌 Update blog post  
-- **Functionality**:  
-  - Author edits post → Validate data → Update in DB
-- **Frontend Concepts**:  
-  - `axios.put(url/:id, data)`  
-- **Backend Concepts**:  
-  - Ownership check: `req.user.id === post.author`  
-  - `findByIdAndUpdate()`
+The backend will run on `http://localhost:3002`
 
----
+### Frontend Setup
 
-### ✅ **DELETE /author/blogs/:id**
-📌 Delete a blog  
-- **Functionality**:  
-  - Author deletes post → Remove from DB
-- **Frontend Concepts**:  
-  - `axios.delete(url/:id)`  
-- **Backend Concepts**:  
-  - Ownership check  
-  - `findByIdAndDelete()`
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
 
----
+2. Install dependencies:
+```bash
+npm install
+```
 
-### ✅ **GET /author/blogs**
-📌 Get all blogs by logged-in author  
-- **Functionality**:  
-  - Fetch blogs where `author == req.user.id`
-- **Backend Concepts**:  
-  - Auth Middleware  
-  - `Blog.find({ author: req.user.id })`
+3. Start the development server:
+```bash
+npm run dev
+```
 
----
+The frontend will run on `http://localhost:5173`
 
-## 🚀 Bonus Features (Future Scope)
-- ✅ **Search**: `?search=react`
-- ✅ **Sorting**: `?sort=latest`
-- ✅ **Pagination**: `?page=1&limit=10`
-- ✅ **Comments API**: Add, edit, delete comments per blog
-- ✅ **Likes API**: Like/unlike a blog post
+## API Endpoints
 
----
+### Authentication
+- `POST /user/register` - Register new user
+- `POST /user/login` - Login user
 
-# 🏆 Summary of Concepts
+### User Management
+- `GET /user/profile` - Get current user profile
+- `POST /user/profile-picture` - Upload profile picture
+- `DELETE /user/profile-picture` - Delete profile picture
+- `POST /user/follow/:userId` - Follow a user
+- `POST /user/unfollow/:userId` - Unfollow a user
+- `GET /user/:userId` - Get user by ID
 
-| Feature               | Concepts Used                        |
-|-----------------------|--------------------------------------|
-| Auth                  | JWT, Middleware                      |
-| CRUD APIs             | REST principles                      |
-| Error Handling        | Custom Middleware                    |
-| DB Operations         | Mongoose Models, populate            |
-| Security              | Hash passwords, protect routes       |
-| Pagination/Search     | Query params, MongoDB regex          |
+### Posts
+- `GET /posts` - Get all posts (with search, sort, pagination)
+- `GET /posts/:id` - Get single post
+- `POST /posts` - Create new post (with images)
+- `PUT /posts/:id` - Update post (with images)
+- `DELETE /posts/:id` - Delete post
+- `DELETE /posts/:id/images/:imageIndex` - Delete specific image from post
+- `POST /posts/:id/like` - Like a post
+- `POST /posts/:id/unlike` - Unlike a post
+- `GET /posts/user/posts` - Get current user's posts
 
----
-# 🚀 Conclusion
-This API provides a robust foundation for managing blog posts, with features like user authentication, CRUD operations,
-error handling, and security measures. The code is well-structured, readable, and follows best practices
-for a Node.js and MongoDB-based API. Future enhancements can include search, sorting, pagination, and
-additional features like comments and likes.
+### Comments
+- `GET /comments/post/:postId` - Get comments for a post
+- `POST /comments` - Create new comment
+- `DELETE /comments/:id` - Delete comment
+
+## File Upload Features
+
+### Profile Picture Upload
+- Click the camera icon on profile picture
+- Select image file (PNG, JPG, GIF up to 5MB)
+- Preview before upload
+- Upload or cancel
+- Remove existing profile picture
+
+### Post Image Upload
+- Drag and drop or click to upload images
+- Multiple image selection (up to 5)
+- Real-time preview with remove option
+- Add more images when editing posts
+- Delete individual images from posts
+
+### Image Management
+- Automatic file validation
+- File size limits (5MB per image)
+- Image format restrictions
+- Secure file storage
+- Static file serving
+
+## User Interface Features
+
+### Navigation
+- Responsive navigation bar
+- User authentication status
+- Quick access to main features
+
+### Post Display
+- Grid layout for post cards
+- Image thumbnails with overlay indicators
+- User profile pictures
+- Like counts and timestamps
+- Hover effects and transitions
+
+### Profile Page
+- User information display
+- Profile picture management
+- Post history
+- Settings tab
+- Follow/unfollow functionality
+
+### Post Creation/Editing
+- Rich text editor
+- Image upload interface
+- Character counters
+- Preview functionality
+- Form validation
+
+## Security Features
+
+- JWT token authentication
+- Password hashing with bcrypt
+- Protected routes
+- File upload validation
+- Input sanitization
+- CORS configuration
+
+## Performance Features
+
+- Image optimization
+- Lazy loading
+- Pagination
+- Efficient database queries
+- Static file serving
+
+## Future Enhancements
+
+- Real-time notifications
+- Advanced search filters
+- Image compression
+- Social media sharing
+- Email notifications
+- User roles and permissions
+- Post categories and tags
+- Rich text editor with formatting
+- Image galleries and slideshows
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
 
 
 
-
-# 📝 Blog App Frontend Overview (Fullstack Project)
-
-This document gives a clean overview of all frontend routes, components, and React concepts used in the Blog App.
-
----
-
-## 📦 Frontend Routes & Components
-
----
-
-### ✅ `/`
-📌 **Home Page**
-- **Functionality**: Display all blogs
-- **Component**: `Home.jsx`
-- **Concepts Used**:
-  - `axios.get(url)`
-  - `useState`, `useEffect`
-  - Map blogs to `BlogCard` components
-- **Extra**: Navbar with links (Home, Create Post, Search)
-
----
-
-### ✅ `/blogs`
-📌 **All Blogs Page**
-- **Functionality**: Display all blogs from DB
-- **Component**: `Blogs.jsx`
-- **Concepts Used**:
-  - `axios.get(url)`
-  - `useState`, `useEffect`
-  - Search and Sort functionality
-  - Pagination with `page`, `limit` query params
-
----
-
-### ✅ `/createpost`
-📌 **Create Post Form**
-- **Functionality**: Create a new blog post
-- **Component**: `CreatePost.jsx`
-- **Concepts Used**:
-  - `axios.post(url, data)`
-  - `useState` for form fields
-  - `onSubmit`, `onChange`
-  - Protected Route with JWT auth
-
----
-
-### ✅ `/blogs/:id`
-📌 **Single Blog Page**
-- **Functionality**: Display blog details by ID
-- **Component**: `BlogDetail.jsx`
-- **Concepts Used**:
-  - `axios.get(url/:id)`
-  - `useParams`
-  - `useEffect`, `useState`
-  - Display author, tags, description
-
----
-
-### ✅ `/login`
-📌 **Login Page**
-- **Functionality**: User login form
-- **Component**: `Login.jsx`
-- **Concepts Used**:
-  - `axios.post(url, data)`
-  - `useState` for email/password
-  - `onSubmit`, `onChange`
-  - Store JWT token in `localStorage`
-
----
-
-### ✅ `/register`
-📌 **Register Page**
-- **Functionality**: User registration form
-- **Component**: `Register.jsx`
-- **Concepts Used**:
-  - `axios.post(url, data)`
-  - `useState` for form fields
-  - Display API response (success/error)
-
----
-
-### ✅ `/profile`
-📌 **User Profile Page**
-- **Functionality**: Display logged-in user details
-- **Component**: `Profile.jsx`
-- **Concepts Used**:
-  - `axios.get(url)`
-  - `useEffect`, `useState`
-  - Protected Route with JWT auth
-
----
-
-### ✅ `/updatepost/:id`
-📌 **Edit Post Form**
-- **Functionality**: Edit a blog post
-- **Component**: `UpdatePost.jsx`
-- **Concepts Used**:
-  - `axios.put(url/:id, data)`
-  - `useParams` to get post id
-  - `useState`, `onSubmit`
-  - Ownership check on backend
-
----
-
-### ✅ `/author/blogs`
-📌 **Author Blogs Page**
-- **Functionality**: Display blogs created by logged-in author
-- **Component**: `AuthorBlogs.jsx`
-- **Concepts Used**:
-  - `axios.get(url)`
-  - `useEffect`, `useState`
-  - Delete blog: `axios.delete(url/:id)`
-  - Update blog: Button to `/updatepost/:id`
-
----
-
-## 🚀 React Concepts Summary
-
-| Feature                   | Concepts Used                            |
-|---------------------------|-------------------------------------------|
-| Data Fetching             | `axios.get/post/put/delete`, `useEffect`|
-| Form Handling             | `useState`, `onChange`, `onSubmit`      |
-| Routing                   | `react-router-dom`, Dynamic Routes      |
-| Auth                      | JWT token in `localStorage`, ProtectedRoute|
-| Component Design          | Props, Child Components                 |
-| Styling                   | TailwindCSS, Flexbox, Grid, Responsiveness|
-
----
-
-## 🏆 Bonus Features (Future Scope)
-- ✅ Search blogs
-- ✅ Sort blogs (latest, oldest, category)
-- ✅ Like/Unlike a blog
-- ✅ Comment system per blog
-- ✅ Responsive design with TailwindCSS Grid/Flexbox
-
----

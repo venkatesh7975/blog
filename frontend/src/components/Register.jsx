@@ -23,7 +23,7 @@ export default function Register() {
       alert("Password must be at least 6 characters");
       return;
     }
-    const response = await axios.post("http://localhost:3002/api/register", {
+    const response = await axios.post("http://localhost:3002/user/register", {
       email,
       password,
     });

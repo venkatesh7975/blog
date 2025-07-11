@@ -8,12 +8,42 @@ export default function CreateForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [charCount, setCharCount] = useState(0);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
   const navigate = useNavigate();
 
   const handleContentChange = (e) => {
     const value = e.target.value;
     setContent(value);
     setCharCount(value.length);
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (validFiles.length + selectedFiles.length > 5) {
+      setError("Maximum 5 images allowed");
+      return;
+    }
+
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    
+    // Create preview URLs
+    validFiles.forEach(file => {
+      const url = URL.createObjectURL(file);
+      setPreviewUrls(prev => [...prev, url]);
+    });
+
+    setError("");
+  };
+
+  const removeImage = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => {
+      const newUrls = prev.filter((_, i) => i !== index);
+      return newUrls;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -33,13 +63,22 @@ export default function CreateForm() {
     setError("");
 
     try {
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      formData.append('content', content.trim());
+      
+      // Append images
+      selectedFiles.forEach(file => {
+        formData.append('images', file);
+      });
+
       const response = await axios.post(
-        "http://localhost:3002/api/posts",
-        { title: title.trim(), content: content.trim() },
+        "http://localhost:3002/posts",
+        formData,
         {
           headers: {
-            "Content-Type": "application/json",
             Authorization: "Bearer " + localStorage.getItem("token"),
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
@@ -99,6 +138,59 @@ export default function CreateForm() {
             <p className="text-xs text-gray-500 mt-1">
               {title.length}/100 characters
             </p>
+          </div>
+
+          {/* Image Upload */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Images (Optional)
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="image-upload"
+              />
+              <label htmlFor="image-upload" className="cursor-pointer">
+                <div className="text-gray-600">
+                  <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="text-lg font-medium">Click to upload images</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    PNG, JPG, GIF up to 5MB each (max 5 images)
+                  </p>
+                </div>
+              </label>
+            </div>
+            
+            {/* Image Previews */}
+            {previewUrls.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Images:</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Content Input */}

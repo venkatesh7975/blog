@@ -1,24 +1,50 @@
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
-import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
-import commentRoutes from "./routes/commentRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
+import commentRoutes from "./routes/commentRoutes.js";
+
+dotenv.config();
 
 const app = express();
-app.use(express.json());
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Middleware
 app.use(cors());
+app.use(express.json());
 
-// Use more specific base paths for clarity
-app.use("/api", userRoutes);
-app.use("/api/posts", postRoutes);
-app.use("/api/comments", commentRoutes);
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-connectDB();
+// Routes
+app.use("/user", userRoutes);
+app.use("/posts", postRoutes);
+app.use("/comments", commentRoutes);
 
-app.listen(3002, () => {
-  console.log("Server running on http://localhost:3002");
-});
+// Connect to MongoDB
+mongoose
+  .connect("mongodb://localhost:27017/newblog")
+  .then(() => {
+    console.log("Connected to MongoDB");
+    app.listen(process.env.PORT || 3002, () => {
+      console.log(`Server is running on port ${process.env.PORT || 3002}`);
+    });
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err);
+  });
 
 

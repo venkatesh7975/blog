@@ -1,32 +1,31 @@
 import express from "express";
-import {
-  getAllPosts,
-  getSinglePost,
-  createPost,
-  updatePost,
-  deletePost,
-  getUserPosts,
+import { 
+  getAllPosts, 
+  getUserPosts, 
+  getSinglePost, 
+  createPost, 
+  updatePost, 
+  deletePost, 
+  deletePostImage,
+  likePost, 
+  unlikePost 
 } from "../controllers/postController.js";
-import authMiddleware from "../middleware/authMiddleware.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-// Get all posts (public)
+// Public routes
 router.get("/", getAllPosts);
-
-// Get current user's posts (protected)
-router.get("/user", authMiddleware, getUserPosts);
-
-// Get single post by id (public)
 router.get("/:id", getSinglePost);
 
-// Create a new post (protected)
-router.post("/", authMiddleware, createPost);
-
-// Update a post by id (protected)
-router.put("/:id", authMiddleware, updatePost);
-
-// Delete a post by id (protected)
+// Protected routes
+router.get("/user/posts", authMiddleware, getUserPosts);
+router.post("/", authMiddleware, upload.array('images', 5), createPost);
+router.put("/:id", authMiddleware, upload.array('images', 5), updatePost);
 router.delete("/:id", authMiddleware, deletePost);
+router.delete("/:id/images/:imageIndex", authMiddleware, deletePostImage);
+router.post("/:id/like", authMiddleware, likePost);
+router.post("/:id/unlike", authMiddleware, unlikePost);
 
 export default router;

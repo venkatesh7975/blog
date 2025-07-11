@@ -9,7 +9,7 @@ export default function Login() {
 
   async function onFormLogin(e) {
     e.preventDefault();
-    const response = await axios.post("http://localhost:3002/api/login", {
+    const response = await axios.post("http://localhost:3002/user/login", {
       email,
       password,
     });
@@ -54,7 +54,7 @@ export default function Login() {
           Login
         </button>
         <p className="mt-4 text-sm text-gray-600 text-center">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <a href="/" className="text-blue-600 hover:underline">
             Register
           </a>

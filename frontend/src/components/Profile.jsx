@@ -8,6 +8,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("posts");
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     fetchUserData();
@@ -18,7 +21,7 @@ export default function Profile() {
     setError("");
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:3002/api/user/profile", {
+      const response = await axios.get("http://localhost:3002/user/profile", {
         headers: {
           Authorization: "Bearer " + token,
         },
@@ -26,7 +29,7 @@ export default function Profile() {
       setUser(response.data);
       
       // Fetch user's posts
-      const postsResponse = await axios.get("http://localhost:3002/api/posts/user", {
+      const postsResponse = await axios.get("http://localhost:3002/posts/user/posts", {
         headers: {
           Authorization: "Bearer " + token,
         },
@@ -44,6 +47,65 @@ export default function Profile() {
     localStorage.removeItem("token");
     localStorage.removeItem("userEmail");
     window.location.href = "/login";
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleUploadProfilePicture = async () => {
+    if (!selectedFile) return;
+
+    setUploading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append('profilePicture', selectedFile);
+
+      const response = await axios.post("http://localhost:3002/user/profile-picture", formData, {
+        headers: {
+          Authorization: "Bearer " + token,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Update user state with new profile picture
+      setUser(prev => ({ ...prev, profilePicture: response.data.profilePicture }));
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      
+      // Clear file input
+      const fileInput = document.getElementById('profile-picture-input');
+      if (fileInput) fileInput.value = '';
+      
+    } catch (err) {
+      console.error("Error uploading profile picture:", err);
+      setError("Failed to upload profile picture. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteProfilePicture = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete("http://localhost:3002/user/profile-picture", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+
+      // Update user state to remove profile picture
+      setUser(prev => ({ ...prev, profilePicture: null }));
+    } catch (err) {
+      console.error("Error deleting profile picture:", err);
+      setError("Failed to delete profile picture. Please try again.");
+    }
   };
 
   const formatDate = (dateString) => {
@@ -94,9 +156,34 @@ export default function Profile() {
       <div className="bg-white rounded-lg shadow-sm border mb-8">
         <div className="p-8">
           <div className="flex items-center space-x-6">
-            <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {user?.email?.charAt(0).toUpperCase() || "U"}
+            <div className="relative">
+              {user?.profilePicture ? (
+                <img
+                  src={`http://localhost:3002${user.profilePicture}`}
+                  alt="Profile"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                />
+              ) : (
+                <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {user?.email?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
+              
+              {/* Upload button */}
+              <label className="absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1 cursor-pointer transition-colors">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <input
+                  id="profile-picture-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+              </label>
             </div>
+            
             <div className="flex-1">
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">
                 {user?.email}
@@ -117,6 +204,59 @@ export default function Profile() {
               </div>
             </div>
           </div>
+
+          {/* Profile Picture Upload Section */}
+          {(selectedFile || user?.profilePicture) && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Profile Picture</h3>
+              
+              {previewUrl && (
+                <div className="mb-4">
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                  />
+                  <p className="text-sm text-gray-600 mt-2">Preview of new profile picture</p>
+                </div>
+              )}
+              
+              <div className="flex items-center space-x-3">
+                {selectedFile && (
+                  <button
+                    onClick={handleUploadProfilePicture}
+                    disabled={uploading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {uploading ? "Uploading..." : "Upload Picture"}
+                  </button>
+                )}
+                
+                {user?.profilePicture && !selectedFile && (
+                  <button
+                    onClick={handleDeleteProfilePicture}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Remove Picture
+                  </button>
+                )}
+                
+                {selectedFile && (
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setPreviewUrl(null);
+                      const fileInput = document.getElementById('profile-picture-input');
+                      if (fileInput) fileInput.value = '';
+                    }}
+                    className="text-gray-600 hover:text-gray-800 text-sm"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
