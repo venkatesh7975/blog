@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Register from "./components/Regiser";
-import Login from "./components/Login";
-import Posts from "./components/Posts";
+
 import ProtectedRoute from "./components/ProtectedRoute";
+import Register from "./components/Register";
+import Posts from "./components/Posts";
+import Login from "./components/Login";
 
 export default function App() {
   return (

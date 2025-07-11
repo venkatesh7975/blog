@@ -7,9 +7,9 @@ export const getAllPosts = async (req, res) => {
       search = "",
       sort = "-createdAt",
       page = 1,
-      limit = 10,
+      limit = 3,
     } = req.query;
-    console.log(req.query);
+    
 
     const query = {};
     if (search) {
@@ -19,8 +19,6 @@ export const getAllPosts = async (req, res) => {
         { content: { $regex: search, $options: "i" } },
       ];
     }
-    console.log(query);
-    console.log(query.$or);
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -28,7 +26,7 @@ export const getAllPosts = async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
-      .populate("userId", "email");
+      .populate("userId");
 
     const totalPosts = await Post.countDocuments(query);
     const totalPages = Math.ceil(totalPosts / limit);
