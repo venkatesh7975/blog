@@ -7,7 +7,7 @@ export const getAllPosts = async (req, res) => {
       search = "",
       sort = "-createdAt",
       page = 1,
-      limit = 3,
+      limit = 6,
     } = req.query;
     
 
@@ -26,7 +26,7 @@ export const getAllPosts = async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
-      .populate("userId");
+      .populate("userId", "email");
 
     const totalPosts = await Post.countDocuments(query);
     const totalPages = Math.ceil(totalPosts / limit);
@@ -36,6 +36,22 @@ export const getAllPosts = async (req, res) => {
     res
       .status(500)
       .json({ message: "Failed to get posts", error: error.message });
+  }
+};
+
+// GET /posts/user - Get current user's posts
+export const getUserPosts = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const posts = await Post.find({ userId })
+      .sort("-createdAt")
+      .populate("userId", "email");
+
+    res.json({ posts });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to get user posts", error: error.message });
   }
 };
 
@@ -60,10 +76,16 @@ export const createPost = async (req, res) => {
     // Assuming you have userId from auth middleware (e.g., req.user._id)
     const userId = req.user._id;
 
+    if (!title || !content) {
+      return res.status(400).json({ message: "Title and content are required" });
+    }
+
     const post = new Post({ title, content, userId });
     const savedPost = await post.save();
+    
+    const populatedPost = await Post.findById(savedPost._id).populate("userId", "email");
 
-    res.status(201).json(savedPost);
+    res.status(201).json(populatedPost);
   } catch (error) {
     res.status(500).json({ message: "Failed to create post", error: error.message });
   }
@@ -86,8 +108,9 @@ export const updatePost = async (req, res) => {
     post.content = content ?? post.content;
 
     const updatedPost = await post.save();
+    const populatedPost = await Post.findById(updatedPost._id).populate("userId", "email");
 
-    res.json(updatedPost);
+    res.json(populatedPost);
   } catch (error) {
     res.status(500).json({ message: "Failed to update post", error: error.message });
   }

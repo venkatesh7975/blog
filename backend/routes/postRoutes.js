@@ -5,6 +5,7 @@ import {
   createPost,
   updatePost,
   deletePost,
+  getUserPosts,
 } from "../controllers/postController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // Get all posts (public)
 router.get("/", getAllPosts);
+
+// Get current user's posts (protected)
+router.get("/user", authMiddleware, getUserPosts);
 
 // Get single post by id (public)
 router.get("/:id", getSinglePost);

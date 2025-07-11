@@ -5,7 +5,7 @@ export const getCommentsByPost = async (req, res) => {
   try {
     const { postId } = req.params;
     const comments = await Comment.find({ postId })
-      .populate("userId", "username email")
+      .populate("userId", "email")
       .sort({ createdAt: -1 });
 
     res.json(comments);
