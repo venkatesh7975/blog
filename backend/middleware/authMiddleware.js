@@ -1,25 +1,22 @@
 import jwt from "jsonwebtoken";
 
 export const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization; //read the token from the header
-  console.log("authheader", authHeader);
+  const authHeader = req.headers.authorization;
+  console.log("Auth header:", authHeader ? "Present" : "Missing");
+  
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.split(" ")[1];
     try {
-
-      console.log("b", req.user);
-      const decoded = jwt.verify(token, "secret_key"); // verify the token using secret key
-
-      req.user = { _id: decoded.id }; // Attach user ID to request
-
-      console.log("Decoded JWT payload:", req.user);
-      console.log("Decoded JWT payload:", decoded);
-
-      next(); // Continue to next middleware/route
+      const decoded = jwt.verify(token, "secret_key");
+      req.user = { _id: decoded.id };
+      console.log("User authenticated:", req.user._id);
+      next();
     } catch (err) {
+      console.error("Token verification failed:", err.message);
       return res.status(401).json({ message: "Invalid token" });
     }
   } else {
+    console.error("No valid authorization header");
     return res.status(401).json({ message: "No token, authorization denied" });
   }
 };

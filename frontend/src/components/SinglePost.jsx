@@ -14,8 +14,6 @@ export default function SinglePost() {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [updating, setUpdating] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const { id } = useParams();
@@ -28,16 +26,10 @@ export default function SinglePost() {
     try {
       const response = await axios.get(`http://localhost:3002/posts/${id}`);
       setPost(response.data);
-      setLikeCount(response.data.likes?.length || 0);
-      
-      // Check if current user is the author
+      // Check if current user is the author (use userId for robustness)
       if (token && response.data.userId?._id) {
-        const currentUserEmail = localStorage.getItem("userEmail");
-        setIsAuthor(currentUserEmail === response.data.userId?.email);
-        
-        // Check if user liked the post
         const currentUserId = localStorage.getItem("userId");
-        setLiked(response.data.likes?.includes(currentUserId) || false);
+        setIsAuthor(currentUserId === response.data.userId?._id);
       }
     } catch (err) {
       console.error("Error fetching post:", err);
@@ -51,9 +43,15 @@ export default function SinglePost() {
     fetchPost();
   }, [id]);
 
+  // Clean up preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
   const handleDeletePost = async () => {
     if (!confirm("Are you sure you want to delete this post?")) return;
-    
     try {
       await axios.delete(`http://localhost:3002/posts/${id}`, {
         headers: {
@@ -76,42 +74,34 @@ export default function SinglePost() {
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     const validFiles = files.filter(file => file.type.startsWith('image/'));
-    
     if (validFiles.length + selectedFiles.length > 5) {
       setError("Maximum 5 images allowed");
       return;
     }
-
     setSelectedFiles(prev => [...prev, ...validFiles]);
-    
     // Create preview URLs
     validFiles.forEach(file => {
       const url = URL.createObjectURL(file);
       setPreviewUrls(prev => [...prev, url]);
     });
-
     setError("");
   };
 
   const removeImage = (index) => {
+    // Clean up the object URL
+    URL.revokeObjectURL(previewUrls[index]);
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => {
-      const newUrls = prev.filter((_, i) => i !== index);
-      return newUrls;
-    });
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleDeleteImage = async (imageIndex) => {
     if (!confirm("Are you sure you want to delete this image?")) return;
-    
     try {
       await axios.delete(`http://localhost:3002/posts/${id}/images/${imageIndex}`, {
         headers: {
           Authorization: "Bearer " + token,
         },
       });
-      
-      // Update post state to remove the image
       setPost(prev => ({
         ...prev,
         images: prev.images.filter((_, i) => i !== imageIndex)
@@ -129,12 +119,9 @@ export default function SinglePost() {
       const formData = new FormData();
       formData.append('title', editTitle);
       formData.append('content', editContent);
-      
-      // Append new images
       selectedFiles.forEach(file => {
         formData.append('images', file);
       });
-
       await axios.put(
         `http://localhost:3002/posts/${id}`,
         formData,
@@ -153,32 +140,6 @@ export default function SinglePost() {
       alert('Failed to update post.');
     } finally {
       setUpdating(false);
-    }
-  };
-
-  const handleLike = async () => {
-    if (!token) {
-      alert('Please login to like posts');
-      return;
-    }
-    
-    try {
-      const endpoint = liked ? 'unlike' : 'like';
-      await axios.post(
-        `http://localhost:3002/posts/${id}/${endpoint}`,
-        {},
-        {
-          headers: {
-            Authorization: 'Bearer ' + token,
-          },
-        }
-      );
-      
-      setLiked(!liked);
-      setLikeCount(liked ? likeCount - 1 : likeCount + 1);
-    } catch (err) {
-      console.error('Error liking/unliking post:', err);
-      alert('Failed to like/unlike post. Please try again.');
     }
   };
 
@@ -255,17 +216,12 @@ export default function SinglePost() {
               <div className="flex items-center space-x-4">
                 <PostActions
                   post={post}
-                  onLike={() => {
-                    setLiked(true);
-                    setLikeCount(likeCount + 1);
-                  }}
-                  onUnlike={() => {
-                    setLiked(false);
-                    setLikeCount(likeCount - 1);
-                  }}
+                  onLike={() => fetchPost()}
+                  onUnlike={() => fetchPost()}
+                  onDislike={() => fetchPost()}
+                  onUndislike={() => fetchPost()}
                   onDelete={handleDeletePost}
                 />
-                
                 {/* Edit/Delete for Author */}
                 {isAuthor && (
                   <div className="flex items-center space-x-2">
@@ -332,7 +288,6 @@ export default function SinglePost() {
                   maxLength={5000}
                   required
                 />
-                
                 {/* Image Upload in Edit Mode */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -356,7 +311,6 @@ export default function SinglePost() {
                       </div>
                     </label>
                   </div>
-                  
                   {/* New Image Previews */}
                   {previewUrls.length > 0 && (
                     <div className="mt-4">
@@ -382,7 +336,6 @@ export default function SinglePost() {
                     </div>
                   )}
                 </div>
-                
                 <div className="flex gap-2">
                   <button
                     type="submit"
@@ -412,7 +365,6 @@ export default function SinglePost() {
           </div>
         </div>
       </article>
-
       {/* Comments Section */}
       <CommentsList postId={id} />
     </div>

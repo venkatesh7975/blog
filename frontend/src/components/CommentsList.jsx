@@ -33,29 +33,69 @@ export default function CommentsList({ postId }) {
   };
 
   const handleCommentUpdated = (commentId, updatedComment) => {
-    setComments(comments.map(comment => 
-      comment._id === commentId ? updatedComment : comment
-    ));
+    console.log("Updating comment:", commentId, updatedComment);
+    
+    const updateCommentInTree = (comments, targetId, updatedComment) => {
+      return comments.map(comment => {
+        if (comment._id === targetId) {
+          return updatedComment;
+        }
+        // Recursively search in replies
+        if (comment.replies && comment.replies.length > 0) {
+          return {
+            ...comment,
+            replies: updateCommentInTree(comment.replies, targetId, updatedComment)
+          };
+        }
+        return comment;
+      });
+    };
+    
+    setComments(prevComments => updateCommentInTree(prevComments, commentId, updatedComment));
   };
 
   const handleCommentDeleted = (commentId) => {
-    setComments(comments.map(comment => 
-      comment._id === commentId 
-        ? { ...comment, content: "[This comment has been deleted]", isDeleted: true }
-        : comment
-    ));
+    console.log("Deleting comment:", commentId);
+    
+    const deleteCommentFromTree = (comments, targetId) => {
+      return comments.filter(comment => {
+        if (comment._id === targetId) {
+          return false; // Remove this comment
+        }
+        // Recursively search in replies
+        if (comment.replies && comment.replies.length > 0) {
+          comment.replies = deleteCommentFromTree(comment.replies, targetId);
+        }
+        return true;
+      });
+    };
+    
+    setComments(prevComments => deleteCommentFromTree(prevComments, commentId));
   };
 
   const handleCommentReply = (commentId, reply) => {
-    setComments(comments.map(comment => {
-      if (comment._id === commentId) {
-        return {
-          ...comment,
-          replies: [...(comment.replies || []), reply]
-        };
-      }
-      return comment;
-    }));
+    console.log("Adding reply to comment:", commentId, reply);
+    
+    const addReplyToComment = (comments, targetId, newReply) => {
+      return comments.map(comment => {
+        if (comment._id === targetId) {
+          return {
+            ...comment,
+            replies: [...(comment.replies || []), newReply]
+          };
+        }
+        // Recursively search in replies
+        if (comment.replies && comment.replies.length > 0) {
+          return {
+            ...comment,
+            replies: addReplyToComment(comment.replies, targetId, newReply)
+          };
+        }
+        return comment;
+      });
+    };
+    
+    setComments(prevComments => addReplyToComment(prevComments, commentId, reply));
   };
 
   if (loading) {

@@ -14,10 +14,31 @@ export const getCommentsByPost = async (req, res) => {
       .populate("userId", "email username profilePicture")
       .populate({
         path: "replies",
-        populate: {
-          path: "userId",
-          select: "email username profilePicture"
-        }
+        match: { isDeleted: false },
+        populate: [
+          {
+            path: "userId",
+            select: "email username profilePicture"
+          },
+          {
+            path: "replies",
+            match: { isDeleted: false },
+            populate: [
+              {
+                path: "userId",
+                select: "email username profilePicture"
+              },
+              {
+                path: "replies",
+                match: { isDeleted: false },
+                populate: {
+                  path: "userId",
+                  select: "email username profilePicture"
+                }
+              }
+            ]
+          }
+        ]
       })
       .sort({ createdAt: -1 });
 
@@ -81,17 +102,21 @@ export const updateComment = async (req, res) => {
     const { content } = req.body;
     const userId = req.user._id;
 
+    console.log(`Updating comment ${id} by user ${userId} with content: ${content}`);
+
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ message: "Comment content cannot be empty" });
     }
 
     const comment = await Comment.findById(id);
     if (!comment || comment.isDeleted) {
+      console.log(`Comment ${id} not found or already deleted`);
       return res.status(404).json({ message: "Comment not found" });
     }
 
     // Check if the user owns the comment
     if (!comment.userId || !userId || !comment.userId.equals(userId)) {
+      console.log(`User ${userId} not authorized to update comment ${id}`);
       return res.status(403).json({ message: "Not authorized to update this comment" });
     }
 
@@ -102,25 +127,31 @@ export const updateComment = async (req, res) => {
     const populatedComment = await Comment.findById(updatedComment._id)
       .populate("userId", "email username profilePicture");
 
+    console.log(`Comment ${id} updated successfully`);
     res.json(populatedComment);
   } catch (error) {
+    console.error("Update comment error:", error);
     res.status(500).json({ message: "Failed to update comment", error: error.message });
   }
 };
 
-// Soft delete a comment by id
+// Soft delete a comment by id and all its replies
 export const deleteComment = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
 
+    console.log(`Deleting comment ${id} by user ${userId}`);
+
     const comment = await Comment.findById(id);
     if (!comment || comment.isDeleted) {
+      console.log(`Comment ${id} not found or already deleted`);
       return res.status(404).json({ message: "Comment not found" });
     }
 
     // Check if the user owns the comment
     if (!comment.userId || !userId || !comment.userId.equals(userId)) {
+      console.log(`User ${userId} not authorized to delete comment ${id}`);
       return res.status(403).json({ message: "Not authorized to delete this comment" });
     }
 
@@ -130,8 +161,23 @@ export const deleteComment = async (req, res) => {
     comment.content = "[This comment has been deleted]";
     await comment.save();
 
-    res.json({ message: "Comment deleted successfully" });
+    // Soft delete all replies to this comment
+    if (comment.replies && comment.replies.length > 0) {
+      console.log(`Deleting ${comment.replies.length} replies to comment ${id}`);
+      await Comment.updateMany(
+        { _id: { $in: comment.replies } },
+        {
+          isDeleted: true,
+          deletedAt: new Date(),
+          content: "[This reply has been deleted]"
+        }
+      );
+    }
+
+    console.log(`Comment ${id} and all replies deleted successfully`);
+    res.json({ message: "Comment and all replies deleted successfully" });
   } catch (error) {
+    console.error("Delete comment error:", error);
     res.status(500).json({ message: "Failed to delete comment", error: error.message });
   }
 };

@@ -250,3 +250,54 @@ export const unlikePost = async (req, res) => {
     res.status(500).json({ message: "Failed to unlike post", error: error.message });
   }
 };
+
+// POST /posts/:id/dislike - Dislike a post
+export const dislikePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const userId = req.user._id;
+    
+    // Check if already disliked
+    if (post.dislikes.some(id => id.toString() === userId.toString())) {
+      return res.status(400).json({ message: "Post already disliked" });
+    }
+
+    // Remove from likes if user had liked it
+    if (post.likes.some(id => id.toString() === userId.toString())) {
+      post.likes = post.likes.filter(id => id.toString() !== userId.toString());
+    }
+
+    // Add dislike
+    post.dislikes.push(userId);
+    await post.save();
+
+    res.json({ message: "Post disliked successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to dislike post", error: error.message });
+  }
+};
+
+// POST /posts/:id/undislike - Remove dislike from a post
+export const undislikePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    const userId = req.user._id;
+    
+    // Check if not disliked
+    if (!post.dislikes.some(id => id.toString() === userId.toString())) {
+      return res.status(400).json({ message: "Post not disliked" });
+    }
+
+    // Remove dislike
+    post.dislikes = post.dislikes.filter(id => id.toString() !== userId.toString());
+    await post.save();
+
+    res.json({ message: "Post undisliked successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to undislike post", error: error.message });
+  }
+};

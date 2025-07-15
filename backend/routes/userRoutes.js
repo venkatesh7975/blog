@@ -1,5 +1,5 @@
 import express from "express";
-import { onRegister, onLogin, getUserProfile, updateProfile, uploadProfilePicture, deleteProfilePicture, followUser, unfollowUser, getUserById, searchUsers } from "../controllers/userController.js";
+import { onRegister, onLogin, getUserProfile, updateProfile, uploadProfilePicture, deleteProfilePicture, followUser, unfollowUser, getUserById, searchUsers, getUserFollowers, getUserFollowing } from "../controllers/userController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 
@@ -16,6 +16,10 @@ router.delete("/profile-picture", authMiddleware, deleteProfilePicture);
 router.get("/search", authMiddleware, searchUsers);
 router.post("/follow/:userId", authMiddleware, followUser);
 router.post("/unfollow/:userId", authMiddleware, unfollowUser);
+
+// Public routes for user profiles
+router.get("/:userId/followers", getUserFollowers);
+router.get("/:userId/following", getUserFollowing);
 
 // Dynamic routes - these should come after specific routes
 router.get("/:userId", getUserById);

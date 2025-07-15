@@ -1,134 +1,103 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import axios from "axios";
 
-export default function PostActions({ post, onLike, onUnlike, onDelete }) {
+export default function PostActions({ post, onLike, onUnlike, onDislike, onUndislike }) {
   const [liking, setLiking] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
+  const [disliking, setDisliking] = useState(false);
   const token = localStorage.getItem("token");
   const currentUserId = localStorage.getItem("userId");
-  const isAuthor = currentUserId === post.userId?._id;
-  const isLiked = post.likes?.some(likeId => likeId.toString() === currentUserId) || false;
+  const isLiked = post.likes?.includes(currentUserId) || false;
+  const isDisliked = post.dislikes?.includes(currentUserId) || false;
 
   const handleLike = async () => {
     if (!token) {
-      alert('Please login to like posts');
+      alert("Please login to interact with posts");
       return;
     }
-    
     setLiking(true);
     try {
+      const endpoint = isLiked ? "unlike" : "like";
+      await axios.post(
+        `http://localhost:3002/posts/${post._id}/${endpoint}`,
+        {},
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
       if (isLiked) {
-        await axios.post(
-          `http://localhost:3002/posts/${post._id}/unlike`,
-          {},
-          {
-            headers: {
-              Authorization: 'Bearer ' + token,
-            },
-          }
-        );
-        onUnlike(post._id);
+        onUnlike && onUnlike();
       } else {
-        await axios.post(
-          `http://localhost:3002/posts/${post._id}/like`,
-          {},
-          {
-            headers: {
-              Authorization: 'Bearer ' + token,
-            },
-          }
-        );
-        onLike(post._id);
+        onLike && onLike();
       }
     } catch (err) {
-      console.error('Error liking/unliking post:', err);
-      alert('Failed to like/unlike post. Please try again.');
+      alert("Failed to like/unlike post. Please try again.");
     } finally {
       setLiking(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this post?")) return;
-    
-    setDeleting(true);
-    try {
-      await axios.delete(`http://localhost:3002/posts/${post._id}`, {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      });
-      onDelete(post._id);
-    } catch (err) {
-      console.error("Error deleting post:", err);
-      alert("Failed to delete post. Please try again.");
-    } finally {
-      setDeleting(false);
+  const handleDislike = async () => {
+    if (!token) {
+      alert("Please login to interact with posts");
+      return;
     }
-  };
-
-  const handleShare = async () => {
-    const postUrl = `${window.location.origin}/posts/${post._id}`;
+    setDisliking(true);
     try {
-      await navigator.clipboard.writeText(postUrl);
-      alert('Post link copied to clipboard!');
+      const endpoint = isDisliked ? "undislike" : "dislike";
+      await axios.post(
+        `http://localhost:3002/posts/${post._id}/${endpoint}`,
+        {},
+        {
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
+      if (isDisliked) {
+        onUndislike && onUndislike();
+      } else {
+        onDislike && onDislike();
+      }
     } catch (err) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = postUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      alert('Post link copied to clipboard!');
+      alert("Failed to dislike/undislike post. Please try again.");
+    } finally {
+      setDisliking(false);
     }
   };
 
   return (
     <div className="flex items-center space-x-4">
-      {/* Like Button */}
       <button
         onClick={handleLike}
         disabled={liking}
-        className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm transition-colors ${
+        className={`flex items-center space-x-1 px-3 py-1 rounded transition-colors ${
           isLiked 
-            ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ? "bg-green-100 text-green-600 hover:bg-green-200" 
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
         } disabled:opacity-50`}
       >
-        <span>{isLiked ? '❤️' : '🤍'}</span>
-        <span>{post.likes?.length || 0}</span>
+        <span className="text-lg">{isLiked ? "👍" : "👍"}</span>
+        <span className="text-sm font-medium">
+          {isLiked ? "Liked" : "Like"} ({post.likes?.length || 0})
+        </span>
       </button>
       
-      {/* Share Button */}
       <button
-        onClick={handleShare}
-        className="flex items-center space-x-1 px-3 py-1 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm transition-colors"
+        onClick={handleDislike}
+        disabled={disliking}
+        className={`flex items-center space-x-1 px-3 py-1 rounded transition-colors ${
+          isDisliked 
+            ? "bg-red-100 text-red-600 hover:bg-red-200" 
+            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+        } disabled:opacity-50`}
       >
-        <span>📤</span>
-        <span>Share</span>
+        <span className="text-lg">{isDisliked ? "👎" : "👎"}</span>
+        <span className="text-sm font-medium">
+          {isDisliked ? "Disliked" : "Dislike"} ({post.dislikes?.length || 0})
+        </span>
       </button>
-      
-      {/* Edit/Delete for Author */}
-      {isAuthor && (
-        <div className="flex items-center space-x-2">
-          <Link
-            to={`/posts/${post._id}/edit`}
-            className="text-blue-600 hover:text-blue-800 transition-colors text-sm"
-          >
-            Edit
-          </Link>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-red-600 hover:text-red-800 transition-colors text-sm disabled:opacity-50"
-          >
-            {deleting ? "Deleting..." : "Delete"}
-          </button>
-        </div>
-      )}
     </div>
   );
 } 

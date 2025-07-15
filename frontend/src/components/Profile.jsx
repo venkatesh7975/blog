@@ -24,22 +24,28 @@ export default function Profile() {
     setError("");
     try {
       const token = localStorage.getItem("token");
+      console.log("Fetching profile with token:", token ? "Token exists" : "No token");
+      
       const response = await axios.get("http://localhost:3002/user/profile", {
         headers: {
           Authorization: "Bearer " + token,
         },
       });
+      console.log("Profile response:", response.data);
       setUser(response.data);
       
       // Fetch user's posts
+      console.log("Fetching user posts...");
       const postsResponse = await axios.get("http://localhost:3002/posts/user/posts", {
         headers: {
           Authorization: "Bearer " + token,
         },
       });
+      console.log("Posts response:", postsResponse.data);
       setUserPosts(postsResponse.data.posts);
     } catch (err) {
       console.error("Error fetching user data:", err);
+      console.error("Error details:", err.response?.data);
       setError("Failed to load profile. Please try again.");
     } finally {
       setLoading(false);

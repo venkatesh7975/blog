@@ -36,6 +36,7 @@ export default function Comment({
   const handleUpdate = async () => {
     if (!editContent.trim()) return;
     
+    console.log("Attempting to update comment:", comment._id, "with content:", editContent);
     setLoading(true);
     try {
       const response = await axios.put(
@@ -48,19 +49,22 @@ export default function Comment({
         }
       );
       
+      console.log("Comment updated successfully:", response.data);
       onUpdate(comment._id, response.data);
       setEditing(false);
     } catch (err) {
       console.error("Error updating comment:", err);
-      alert("Failed to update comment. Please try again.");
+      const errorMessage = err.response?.data?.message || "Failed to update comment. Please try again.";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
+    if (!confirm("Are you sure you want to delete this comment? This will also delete all replies to this comment.")) return;
     
+    console.log("Attempting to delete comment:", comment._id);
     setLoading(true);
     try {
       await axios.delete(`http://localhost:3002/comments/${comment._id}`, {
@@ -69,10 +73,12 @@ export default function Comment({
         },
       });
       
+      console.log("Comment deleted successfully");
       onDelete(comment._id);
     } catch (err) {
       console.error("Error deleting comment:", err);
-      alert("Failed to delete comment. Please try again.");
+      const errorMessage = err.response?.data?.message || "Failed to delete comment. Please try again.";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

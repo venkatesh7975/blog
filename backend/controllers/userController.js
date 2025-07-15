@@ -349,4 +349,42 @@ export async function searchUsers(req, res) {
   }
 }
 
+// GET /user/:userId/followers - Get user's followers list
+export async function getUserFollowers(req, res) {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId)
+      .populate("followers", "username email profilePicture")
+      .select("followers");
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ followers: user.followers || [] });
+  } catch (err) {
+    console.error("Get user followers error:", err);
+    res.status(500).json({ message: "Failed to get followers", error: err.message });
+  }
+}
+
+// GET /user/:userId/following - Get user's following list
+export async function getUserFollowing(req, res) {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId)
+      .populate("following", "username email profilePicture")
+      .select("following");
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ following: user.following || [] });
+  } catch (err) {
+    console.error("Get user following error:", err);
+    res.status(500).json({ message: "Failed to get following", error: err.message });
+  }
+}
+
 
