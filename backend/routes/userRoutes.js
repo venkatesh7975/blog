@@ -5,8 +5,13 @@ import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
+// Public routes
 router.post("/register", onRegister);
 router.post("/login", onLogin);
+
+// Public routes for user profiles (these should come before dynamic routes)
+router.get("/:userId/followers", getUserFollowers);
+router.get("/:userId/following", getUserFollowing);
 
 // Protected routes - specific routes first
 router.get("/profile", authMiddleware, getUserProfile);
@@ -17,11 +22,7 @@ router.get("/search", authMiddleware, searchUsers);
 router.post("/follow/:userId", authMiddleware, followUser);
 router.post("/unfollow/:userId", authMiddleware, unfollowUser);
 
-// Public routes for user profiles
-router.get("/:userId/followers", getUserFollowers);
-router.get("/:userId/following", getUserFollowing);
-
-// Dynamic routes - these should come after specific routes
+// Dynamic routes - these should come last
 router.get("/:userId", getUserById);
 
 export default router;

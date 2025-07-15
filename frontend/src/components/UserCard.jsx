@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 export default function UserCard({ user, onFollowChange }) {
@@ -8,6 +8,13 @@ export default function UserCard({ user, onFollowChange }) {
 
   const token = localStorage.getItem("token");
   const currentUserId = localStorage.getItem("userId");
+
+  // Initialize follow state based on user data
+  useEffect(() => {
+    if (user.isFollowing !== undefined) {
+      setIsFollowing(user.isFollowing);
+    }
+  }, [user.isFollowing]);
 
   const handleFollow = async () => {
     if (!token) {
@@ -47,7 +54,7 @@ export default function UserCard({ user, onFollowChange }) {
       }
       
       if (onFollowChange) {
-        onFollowChange(user._id, isFollowing);
+        onFollowChange(user._id, !isFollowing);
       }
     } catch (error) {
       console.error("Error following/unfollowing user:", error);

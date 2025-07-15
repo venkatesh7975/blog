@@ -342,7 +342,17 @@ export async function searchUsers(req, res) {
       .select("username email profilePicture")
       .limit(10);
 
-    res.json(users);
+    // Get current user's following list to determine follow status
+    const currentUser = await User.findById(currentUserId).select("following");
+    const followingIds = currentUser.following || [];
+
+    // Add follow status to each user
+    const usersWithFollowStatus = users.map(user => ({
+      ...user.toObject(),
+      isFollowing: followingIds.includes(user._id)
+    }));
+
+    res.json(usersWithFollowStatus);
   } catch (err) {
     console.error("Search users error:", err);
     res.status(500).json({ message: "Failed to search users", error: err.message });

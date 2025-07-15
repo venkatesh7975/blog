@@ -26,6 +26,7 @@ export default function UserSearch() {
   const searchUsers = async () => {
     if (!searchQuery.trim()) return;
     
+    console.log("Searching for users with query:", searchQuery.trim());
     setLoading(true);
     setError("");
     try {
@@ -37,20 +38,23 @@ export default function UserSearch() {
           },
         }
       );
+      console.log("Search response:", response.data);
       setUsers(response.data);
     } catch (error) {
       console.error("Error searching users:", error);
-      setError("Failed to search users. Please try again.");
+      console.error("Error response:", error.response?.data);
+      setError(error.response?.data?.message || "Failed to search users. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleFollowChange = (userId, isFollowing) => {
+    console.log("Follow status changed for user:", userId, "isFollowing:", isFollowing);
     // Update the user's follow status in the list
     setUsers(users.map(user => 
       user._id === userId 
-        ? { ...user, isFollowing: !isFollowing }
+        ? { ...user, isFollowing: isFollowing }
         : user
     ));
   };

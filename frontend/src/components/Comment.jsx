@@ -1,5 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
+import PropTypes from "prop-types";
+import ReplyForm from "./ReplyForm";
+import CommentActions from "./CommentActions";
 
 export default function Comment({ 
   comment, 
@@ -12,7 +15,6 @@ export default function Comment({
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
   const [replying, setReplying] = useState(false);
-  const [replyContent, setReplyContent] = useState("");
   const [loading, setLoading] = useState(false);
 
   const token = localStorage.getItem("token");
@@ -35,8 +37,7 @@ export default function Comment({
 
   const handleUpdate = async () => {
     if (!editContent.trim()) return;
-    
-    console.log("Attempting to update comment:", comment._id, "with content:", editContent);
+    console.log("Attempting to update comment:", comment._id, "with content:", editContent.trim());
     setLoading(true);
     try {
       const response = await axios.put(
@@ -48,12 +49,12 @@ export default function Comment({
           },
         }
       );
-      
-      console.log("Comment updated successfully:", response.data);
+      console.log("Update response:", response.data);
       onUpdate(comment._id, response.data);
       setEditing(false);
     } catch (err) {
       console.error("Error updating comment:", err);
+      console.error("Error response:", err.response?.data);
       const errorMessage = err.response?.data?.message || "Failed to update comment. Please try again.";
       alert(errorMessage);
     } finally {
@@ -63,8 +64,6 @@ export default function Comment({
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this comment? This will also delete all replies to this comment.")) return;
-    
-    console.log("Attempting to delete comment:", comment._id);
     setLoading(true);
     try {
       await axios.delete(`http://localhost:3002/comments/${comment._id}`, {
@@ -72,11 +71,8 @@ export default function Comment({
           Authorization: "Bearer " + token,
         },
       });
-      
-      console.log("Comment deleted successfully");
       onDelete(comment._id);
     } catch (err) {
-      console.error("Error deleting comment:", err);
       const errorMessage = err.response?.data?.message || "Failed to delete comment. Please try again.";
       alert(errorMessage);
     } finally {
@@ -86,12 +82,10 @@ export default function Comment({
 
   const handleReply = () => {
     setReplying(true);
-    setReplyContent("");
   };
 
-  const handleSubmitReply = async () => {
+  const handleSubmitReply = async (replyContent) => {
     if (!replyContent.trim()) return;
-    
     setLoading(true);
     try {
       const response = await axios.post(
@@ -103,12 +97,9 @@ export default function Comment({
           },
         }
       );
-      
       onReply(comment._id, response.data);
-      setReplyContent("");
       setReplying(false);
     } catch (err) {
-      console.error("Error posting reply:", err);
       alert("Failed to post reply. Please try again.");
     } finally {
       setLoading(false);
@@ -133,7 +124,6 @@ export default function Comment({
               <span className="text-xs text-gray-400">• reply</span>
             )}
           </div>
-          
           {editing ? (
             <div className="space-y-2">
               <textarea
@@ -162,71 +152,25 @@ export default function Comment({
           ) : (
             <p className="text-gray-700">{comment.content}</p>
           )}
-          
           {!comment.isDeleted && (
-            <div className="flex space-x-2 mt-2">
-              {token && (
-                <button
-                  onClick={handleReply}
-                  className="text-blue-600 hover:text-blue-800 transition-colors text-xs"
-                >
-                  Reply
-                </button>
-              )}
-              {isCommentAuthor && !editing && (
-                <>
-                  <button
-                    onClick={handleEdit}
-                    className="text-blue-600 hover:text-blue-800 transition-colors text-xs"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="text-red-600 hover:text-red-800 transition-colors text-xs"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </div>
+            <CommentActions
+              canEdit={isCommentAuthor}
+              canDelete={isCommentAuthor}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onReply={handleReply}
+              showReply={!!token}
+              isEditing={editing}
+              isLoading={loading}
+            />
           )}
-          
-          {/* Reply form */}
           {replying && (
-            <div className="mt-3 space-y-2">
-              <textarea
-                placeholder="Write a reply..."
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                maxLength={500}
-              />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">
-                  {replyContent.length}/500 characters
-                </span>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={handleSubmitReply}
-                    disabled={!replyContent.trim() || loading}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded text-xs"
-                  >
-                    {loading ? "Posting..." : "Post Reply"}
-                  </button>
-                  <button
-                    onClick={() => setReplying(false)}
-                    className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded text-xs"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ReplyForm
+              onSubmit={handleSubmitReply}
+              onCancel={() => setReplying(false)}
+              loading={loading}
+            />
           )}
-          
-          {/* Replies */}
           {comment.replies && comment.replies.length > 0 && (
             <div className="mt-3 space-y-2">
               {comment.replies.map((reply, index) => (
@@ -246,4 +190,13 @@ export default function Comment({
       </div>
     </div>
   );
-} 
+}
+
+Comment.propTypes = {
+  comment: PropTypes.object.isRequired,
+  isReply: PropTypes.bool,
+  onUpdate: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onReply: PropTypes.func.isRequired,
+  currentUserId: PropTypes.string,
+}; 

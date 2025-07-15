@@ -1,5 +1,7 @@
+import { useMemo } from "react";
+
 export default function Pagination({ currentPage, totalPages, onPageChange }) {
-  const getPageNumbers = () => {
+  const pageNumbers = useMemo(() => {
     const pages = [];
     const maxVisible = 5;
     
@@ -32,24 +34,28 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
     }
     
     return pages;
-  };
+  }, [currentPage, totalPages]);
 
   if (totalPages <= 1) return null;
+
+  const handlePageClick = (page) => {
+    onPageChange(page);
+  };
 
   return (
     <div className="flex items-center justify-center space-x-2 mt-8">
       <button
-        onClick={() => onPageChange(currentPage - 1)}
+        onClick={() => handlePageClick(currentPage - 1)}
         disabled={currentPage === 1}
         className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Previous
       </button>
       
-      {getPageNumbers().map((page, index) => (
+      {pageNumbers.map((page, index) => (
         <button
           key={index}
-          onClick={() => typeof page === 'number' && onPageChange(page)}
+          onClick={() => typeof page === 'number' && handlePageClick(page)}
           disabled={page === '...'}
           className={`px-3 py-2 border rounded-md text-sm font-medium ${
             page === currentPage
@@ -64,7 +70,7 @@ export default function Pagination({ currentPage, totalPages, onPageChange }) {
       ))}
       
       <button
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={() => handlePageClick(currentPage + 1)}
         disabled={currentPage === totalPages}
         className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >

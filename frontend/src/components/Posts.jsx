@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import PostCard from "./PostCard";
 import SearchBar from "./SearchBar";
@@ -19,66 +19,75 @@ export default function Posts() {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const params = new URLSearchParams({
+          search: searchTerm,
+          sort: sortBy,
+          page: currentPage,
+          limit: 6,
+        });
+
+        const response = await axios.get(`http://localhost:3002/posts?${params}`);
+        setPosts(response.data.posts);
+        setTotalPages(response.data.totalPages);
+        setTotalPosts(response.data.totalPosts);
+      } catch (err) {
+        console.error("Error fetching posts:", err);
+        setError("Failed to load posts. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchPosts();
   }, [searchTerm, sortBy, currentPage]);
 
-  const fetchPosts = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const params = new URLSearchParams({
-        search: searchTerm,
-        sort: sortBy,
-        page: currentPage,
-        limit: 6,
-      });
-
-      const response = await axios.get(`http://localhost:3002/posts?${params}`);
-      setPosts(response.data.posts);
-      setTotalPages(response.data.totalPages);
-      setTotalPosts(response.data.totalPosts);
-    } catch (err) {
-      console.error("Error fetching posts:", err);
-      setError("Failed to load posts. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = (term) => {
+  const handleSearch = useCallback((term) => {
     setSearchTerm(term);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSortChange = (newSortBy) => {
+  const handleSortChange = useCallback((newSortBy) => {
     setSortBy(newSortBy);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-  };
+  }, []);
 
-  const handlePostDelete = (postId) => {
-    setPosts(posts.filter(post => post._id !== postId));
+  const handlePostDelete = useCallback((postId) => {
+    // Remove the post from the current page
+    const updatedPosts = posts.filter(post => post._id !== postId);
+    setPosts(updatedPosts);
+    
+    // Update total posts count
     setTotalPosts(prev => prev - 1);
-  };
+    
+    // If we're on a page that becomes empty and it's not the first page, go to previous page
+    if (updatedPosts.length === 0 && currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  }, [posts, currentPage]);
 
-  const handlePostLike = (postId) => {
+  const handlePostLike = useCallback((postId) => {
     setPosts(posts.map(post => 
       post._id === postId 
         ? { ...post, likes: [...(post.likes || []), localStorage.getItem("userId")] }
         : post
     ));
-  };
+  }, [posts]);
 
-  const handlePostUnlike = (postId) => {
+  const handlePostUnlike = useCallback((postId) => {
     setPosts(posts.map(post => 
       post._id === postId 
         ? { ...post, likes: (post.likes || []).filter(id => id !== localStorage.getItem("userId")) }
         : post
     ));
-  };
+  }, [posts]);
 
   if (loading && posts.length === 0) {
     return (
@@ -107,7 +116,7 @@ export default function Posts() {
         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-800">{error}</p>
           <button 
-            onClick={fetchPosts}
+            onClick={() => window.location.reload()}
             className="mt-2 text-blue-600 hover:underline"
           >
             Try again

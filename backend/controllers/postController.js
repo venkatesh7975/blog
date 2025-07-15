@@ -1,4 +1,5 @@
 import Post from "../models/Post.js";
+import Comment from "../models/Comment.js";
 import fs from 'fs';
 import path from 'path';
 
@@ -12,6 +13,7 @@ export const getAllPosts = async (req, res) => {
       limit = 6,
     } = req.query;
     
+    console.log("Backend received request with:", { search, sort, page, limit });
 
     const query = {};
     if (search) {
@@ -23,6 +25,7 @@ export const getAllPosts = async (req, res) => {
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
+    console.log("Calculated skip:", skip, "for page:", page);
 
     const posts = await Post.find(query)
       .sort(sort)
@@ -30,11 +33,36 @@ export const getAllPosts = async (req, res) => {
       .limit(parseInt(limit))
       .populate("userId", "email username profilePicture");
 
-    const totalPosts = await Post.countDocuments(query);
-    const totalPages = Math.ceil(totalPosts / limit);
+    console.log("Found posts count:", posts.length);
 
-    res.json({ posts, totalPosts, totalPages, currentPage: parseInt(page) });
+    // Get comment counts for each post
+    const postsWithCommentCounts = await Promise.all(
+      posts.map(async (post) => {
+        const commentCount = await Comment.countDocuments({ 
+          postId: post._id, 
+          parentCommentId: null, // Only count top-level comments
+          isDeleted: false 
+        });
+        return {
+          ...post.toObject(),
+          commentCount
+        };
+      })
+    );
+
+    const totalPosts = await Post.countDocuments(query);
+    const totalPages = Math.ceil(totalPosts / parseInt(limit));
+
+    console.log("Sending response:", { 
+      postsCount: postsWithCommentCounts.length, 
+      totalPosts, 
+      totalPages, 
+      currentPage: parseInt(page) 
+    });
+
+    res.json({ posts: postsWithCommentCounts, totalPosts, totalPages, currentPage: parseInt(page) });
   } catch (error) {
+    console.error("Error in getAllPosts:", error);
     res
       .status(500)
       .json({ message: "Failed to get posts", error: error.message });
@@ -49,7 +77,22 @@ export const getUserPosts = async (req, res) => {
       .sort("-createdAt")
       .populate("userId", "email username profilePicture");
 
-    res.json({ posts });
+    // Get comment counts for each post
+    const postsWithCommentCounts = await Promise.all(
+      posts.map(async (post) => {
+        const commentCount = await Comment.countDocuments({ 
+          postId: post._id, 
+          parentCommentId: null, // Only count top-level comments
+          isDeleted: false 
+        });
+        return {
+          ...post.toObject(),
+          commentCount
+        };
+      })
+    );
+
+    res.json({ posts: postsWithCommentCounts });
   } catch (error) {
     res
       .status(500)
@@ -65,7 +108,22 @@ export const getPostsByUserId = async (req, res) => {
       .sort("-createdAt")
       .populate("userId", "email username profilePicture");
 
-    res.json({ posts });
+    // Get comment counts for each post
+    const postsWithCommentCounts = await Promise.all(
+      posts.map(async (post) => {
+        const commentCount = await Comment.countDocuments({ 
+          postId: post._id, 
+          parentCommentId: null, // Only count top-level comments
+          isDeleted: false 
+        });
+        return {
+          ...post.toObject(),
+          commentCount
+        };
+      })
+    );
+
+    res.json({ posts: postsWithCommentCounts });
   } catch (error) {
     res
       .status(500)
@@ -75,11 +133,23 @@ export const getPostsByUserId = async (req, res) => {
 
 // GET /posts/:id
 export const getSinglePost = async (req, res) => {
-
   try {
     const post = await Post.findById(req.params.id).populate("userId", "email username profilePicture");
     if (!post) return res.status(404).json({ message: "Post not found" });
-    res.json(post);
+    
+    // Get comment count for this post
+    const commentCount = await Comment.countDocuments({ 
+      postId: post._id, 
+      parentCommentId: null, // Only count top-level comments
+      isDeleted: false 
+    });
+    
+    const postWithCommentCount = {
+      ...post.toObject(),
+      commentCount
+    };
+    
+    res.json(postWithCommentCount);
   } catch (error) {
     res
       .status(500)
@@ -105,7 +175,13 @@ export const createPost = async (req, res) => {
     
     const populatedPost = await Post.findById(savedPost._id).populate("userId", "email username profilePicture");
 
-    res.status(201).json(populatedPost);
+    // Add commentCount field (0 for new posts)
+    const postWithCommentCount = {
+      ...populatedPost.toObject(),
+      commentCount: 0
+    };
+
+    res.status(201).json(postWithCommentCount);
   } catch (error) {
     res.status(500).json({ message: "Failed to create post", error: error.message });
   }
@@ -136,7 +212,19 @@ export const updatePost = async (req, res) => {
     const updatedPost = await post.save();
     const populatedPost = await Post.findById(updatedPost._id).populate("userId", "email username profilePicture");
 
-    res.json(populatedPost);
+    // Get comment count for this post
+    const commentCount = await Comment.countDocuments({ 
+      postId: updatedPost._id, 
+      parentCommentId: null, // Only count top-level comments
+      isDeleted: false 
+    });
+    
+    const postWithCommentCount = {
+      ...populatedPost.toObject(),
+      commentCount
+    };
+
+    res.json(postWithCommentCount);
   } catch (error) {
     res.status(500).json({ message: "Failed to update post", error: error.message });
   }
@@ -162,6 +250,9 @@ export const deletePost = async (req, res) => {
         }
       });
     }
+
+    // Delete all comments associated with this post
+    await Comment.deleteMany({ postId: post._id });
 
     await post.deleteOne();
 

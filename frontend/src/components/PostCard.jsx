@@ -61,17 +61,20 @@ export default function PostCard({ post, onDelete, onLike, onUnlike }) {
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this post?")) return;
     
+    console.log("Attempting to delete post:", post._id);
     setDeleting(true);
     try {
-      await axios.delete(`http://localhost:3002/posts/${post._id}`, {
+      const response = await axios.delete(`http://localhost:3002/posts/${post._id}`, {
         headers: {
           Authorization: "Bearer " + token,
         },
       });
+      console.log("Delete response:", response.data);
       onDelete(post._id);
     } catch (err) {
       console.error("Error deleting post:", err);
-      alert("Failed to delete post. Please try again.");
+      console.error("Error response:", err.response?.data);
+      alert(err.response?.data?.message || "Failed to delete post. Please try again.");
     } finally {
       setDeleting(false);
     }
@@ -199,7 +202,7 @@ export default function PostCard({ post, onDelete, onLike, onUnlike }) {
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <span>{post.likes?.length || 0} likes</span>
-            <span>{post.comments?.length || 0} comments</span>
+            <span>{post.commentCount || 0} comments</span>
           </div>
           
           <Link
