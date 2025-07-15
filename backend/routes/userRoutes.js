@@ -1,5 +1,5 @@
 import express from "express";
-import { onRegister, onLogin, getUserProfile, uploadProfilePicture, deleteProfilePicture, followUser, unfollowUser, getUserById } from "../controllers/userController.js";
+import { onRegister, onLogin, getUserProfile, updateProfile, uploadProfilePicture, deleteProfilePicture, followUser, unfollowUser, getUserById, searchUsers } from "../controllers/userController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadMiddleware.js";
 
@@ -8,12 +8,16 @@ const router = express.Router();
 router.post("/register", onRegister);
 router.post("/login", onLogin);
 
-// Protected routes
+// Protected routes - specific routes first
 router.get("/profile", authMiddleware, getUserProfile);
+router.put("/profile", authMiddleware, updateProfile);
 router.post("/profile-picture", authMiddleware, upload.single('profilePicture'), uploadProfilePicture);
 router.delete("/profile-picture", authMiddleware, deleteProfilePicture);
+router.get("/search", authMiddleware, searchUsers);
 router.post("/follow/:userId", authMiddleware, followUser);
 router.post("/unfollow/:userId", authMiddleware, unfollowUser);
+
+// Dynamic routes - these should come after specific routes
 router.get("/:userId", getUserById);
 
 export default router;

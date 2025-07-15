@@ -1,14 +1,14 @@
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { useState, useEffect } from "react";
+import PostActions from "./PostActions";
+import CommentsList from "./CommentsList";
+import LoadingSpinner from "./LoadingSpinner";
 
 export default function SinglePost() {
   const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [newComment, setNewComment] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
   const [isAuthor, setIsAuthor] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -16,7 +16,6 @@ export default function SinglePost() {
   const [updating, setUpdating] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [liking, setLiking] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const { id } = useParams();
@@ -27,25 +26,18 @@ export default function SinglePost() {
     setLoading(true);
     setError("");
     try {
-      const [postResponse, commentsResponse] = await Promise.all([
-        axios.get(`http://localhost:3002/posts/${id}`),
-        axios.get(`http://localhost:3002/comments/post/${id}`)
-      ]);
-      
-      setPost(postResponse.data);
-      setComments(commentsResponse.data);
-      setLikeCount(postResponse.data.likes?.length || 0);
+      const response = await axios.get(`http://localhost:3002/posts/${id}`);
+      setPost(response.data);
+      setLikeCount(response.data.likes?.length || 0);
       
       // Check if current user is the author
-      if (token && postResponse.data.userId?._id) {
-        // You might want to decode the token to get user ID
-        // For now, we'll check by email
+      if (token && response.data.userId?._id) {
         const currentUserEmail = localStorage.getItem("userEmail");
-        setIsAuthor(currentUserEmail === postResponse.data.userId?.email);
+        setIsAuthor(currentUserEmail === response.data.userId?.email);
         
         // Check if user liked the post
         const currentUserId = localStorage.getItem("userId");
-        setLiked(postResponse.data.likes?.includes(currentUserId) || false);
+        setLiked(response.data.likes?.includes(currentUserId) || false);
       }
     } catch (err) {
       console.error("Error fetching post:", err);
@@ -58,34 +50,6 @@ export default function SinglePost() {
   useEffect(() => {
     fetchPost();
   }, [id]);
-
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!newComment.trim()) return;
-    
-    setSubmittingComment(true);
-    try {
-      const response = await axios.post(
-        `http://localhost:3002/comments`,
-        { content: newComment.trim(), postId: id },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + token,
-          },
-        }
-      );
-      
-      setComments([response.data, ...comments]);
-      setNewComment("");
-    } catch (err) {
-      console.error("Error posting comment:", err);
-      alert("Failed to post comment. Please try again.");
-    } finally {
-      setSubmittingComment(false);
-    }
-  };
 
   const handleDeletePost = async () => {
     if (!confirm("Are you sure you want to delete this post?")) return;
@@ -198,7 +162,6 @@ export default function SinglePost() {
       return;
     }
     
-    setLiking(true);
     try {
       const endpoint = liked ? 'unlike' : 'like';
       await axios.post(
@@ -216,48 +179,7 @@ export default function SinglePost() {
     } catch (err) {
       console.error('Error liking/unliking post:', err);
       alert('Failed to like/unlike post. Please try again.');
-    } finally {
-      setLiking(false);
     }
-  };
-
-  const handleShare = async () => {
-    const postUrl = window.location.href;
-    try {
-      await navigator.clipboard.writeText(postUrl);
-      alert('Post link copied to clipboard!');
-    } catch (err) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = postUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      alert('Post link copied to clipboard!');
-    }
-  };
-
-  const handleDeleteComment = async (commentId) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
-    
-    try {
-      await axios.delete(`http://localhost:3002/comments/${commentId}`, {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      });
-      
-      setComments(comments.filter(comment => comment._id !== commentId));
-    } catch (err) {
-      console.error("Error deleting comment:", err);
-      alert("Failed to delete comment. Please try again.");
-    }
-  };
-
-  const isCommentAuthor = (comment) => {
-    const currentUserEmail = localStorage.getItem("userEmail");
-    return currentUserEmail === comment.userId?.email;
   };
 
   const formatDate = (dateString) => {
@@ -273,9 +195,7 @@ export default function SinglePost() {
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
+        <LoadingSpinner size="lg" className="h-64" />
       </div>
     );
   }
@@ -328,33 +248,23 @@ export default function SinglePost() {
               <div className="flex items-center space-x-4">
                 <span className="flex items-center">
                   <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                  {post.userId?.email || "Anonymous"}
+                  @{post.userId?.username || "Anonymous"}
                 </span>
                 <span>{formatDate(post.createdAt)}</span>
               </div>
               <div className="flex items-center space-x-4">
-                {/* Like/Unlike Button */}
-                <button
-                  onClick={handleLike}
-                  disabled={liking}
-                  className={`flex items-center space-x-1 px-3 py-1 rounded-full text-sm transition-colors ${
-                    liked 
-                      ? 'bg-red-100 text-red-600 hover:bg-red-200' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <span>{liked ? '❤️' : '🤍'}</span>
-                  <span>{likeCount}</span>
-                </button>
-                
-                {/* Share Button */}
-                <button
-                  onClick={handleShare}
-                  className="flex items-center space-x-1 px-3 py-1 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm transition-colors"
-                >
-                  <span>📤</span>
-                  <span>Share</span>
-                </button>
+                <PostActions
+                  post={post}
+                  onLike={() => {
+                    setLiked(true);
+                    setLikeCount(likeCount + 1);
+                  }}
+                  onUnlike={() => {
+                    setLiked(false);
+                    setLikeCount(likeCount - 1);
+                  }}
+                  onDelete={handleDeletePost}
+                />
                 
                 {/* Edit/Delete for Author */}
                 {isAuthor && (
@@ -504,81 +414,7 @@ export default function SinglePost() {
       </article>
 
       {/* Comments Section */}
-      <div className="mt-8 bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Comments ({comments.length})
-          </h2>
-        </div>
-
-        {/* Add Comment Form */}
-        {token && (
-          <div className="p-6 border-b border-gray-200">
-            <form onSubmit={handleCommentSubmit}>
-              <textarea
-                placeholder="Write a comment..."
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-vertical"
-                maxLength={500}
-              />
-              <div className="flex justify-between items-center mt-3">
-                <span className="text-xs text-gray-500">
-                  {newComment.length}/500 characters
-                </span>
-                <button
-                  type="submit"
-                  disabled={!newComment.trim() || submittingComment}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  {submittingComment ? "Posting..." : "Post Comment"}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Comments List */}
-        <div className="p-6">
-          {comments.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>No comments yet. Be the first to comment!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {comments.map((comment) => (
-                <div key={comment._id} className="border-b border-gray-100 pb-4 last:border-b-0">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                      {comment.userId?.email?.charAt(0).toUpperCase() || "A"}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="font-medium text-gray-900">
-                          {comment.userId?.email || "Anonymous"}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(comment.createdAt)}
-                        </span>
-                      </div>
-                      <p className="text-gray-700">{comment.content}</p>
-                      {isCommentAuthor(comment) && (
-                        <button
-                          onClick={() => handleDeleteComment(comment._id)}
-                          className="text-red-600 hover:text-red-800 transition-colors text-xs mt-2"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      <CommentsList postId={id} />
     </div>
   );
 }

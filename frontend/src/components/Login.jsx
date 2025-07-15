@@ -16,6 +16,10 @@ export default function Login() {
     console.log(response.data.token);
     if (response.data.token) {
       localStorage.setItem("token", response.data.token);
+      // Store user data for comment author checking
+      localStorage.setItem("userId", response.data.user._id);
+      localStorage.setItem("userEmail", response.data.user.email);
+      localStorage.setItem("username", response.data.user.username);
       navigate("/posts");
       return;
     }

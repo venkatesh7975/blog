@@ -28,7 +28,7 @@ export const getAllPosts = async (req, res) => {
       .sort(sort)
       .skip(skip)
       .limit(parseInt(limit))
-      .populate("userId", "email profilePicture");
+      .populate("userId", "email username profilePicture");
 
     const totalPosts = await Post.countDocuments(query);
     const totalPages = Math.ceil(totalPosts / limit);
@@ -47,7 +47,23 @@ export const getUserPosts = async (req, res) => {
     const userId = req.user._id;
     const posts = await Post.find({ userId })
       .sort("-createdAt")
-      .populate("userId", "email profilePicture");
+      .populate("userId", "email username profilePicture");
+
+    res.json({ posts });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to get user posts", error: error.message });
+  }
+};
+
+// GET /posts/user/:userId - Get posts by a specific user
+export const getPostsByUserId = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const posts = await Post.find({ userId })
+      .sort("-createdAt")
+      .populate("userId", "email username profilePicture");
 
     res.json({ posts });
   } catch (error) {
@@ -61,7 +77,7 @@ export const getUserPosts = async (req, res) => {
 export const getSinglePost = async (req, res) => {
 
   try {
-    const post = await Post.findById(req.params.id).populate("userId", "email profilePicture");
+    const post = await Post.findById(req.params.id).populate("userId", "email username profilePicture");
     if (!post) return res.status(404).json({ message: "Post not found" });
     res.json(post);
   } catch (error) {
@@ -87,7 +103,7 @@ export const createPost = async (req, res) => {
     const post = new Post({ title, content, userId, images });
     const savedPost = await post.save();
     
-    const populatedPost = await Post.findById(savedPost._id).populate("userId", "email profilePicture");
+    const populatedPost = await Post.findById(savedPost._id).populate("userId", "email username profilePicture");
 
     res.status(201).json(populatedPost);
   } catch (error) {
@@ -103,7 +119,7 @@ export const updatePost = async (req, res) => {
     
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Optional: check if the user owns the post
+    // Check if the user owns the post
     if (post.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "You don't have permission to update this post" });
     }
@@ -118,7 +134,7 @@ export const updatePost = async (req, res) => {
     }
 
     const updatedPost = await post.save();
-    const populatedPost = await Post.findById(updatedPost._id).populate("userId", "email profilePicture");
+    const populatedPost = await Post.findById(updatedPost._id).populate("userId", "email username profilePicture");
 
     res.json(populatedPost);
   } catch (error) {
@@ -132,7 +148,7 @@ export const deletePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Optional: check if the user owns the post
+    // Check if the user owns the post
     if (!post.userId.equals(req.user._id)) {
       return res.status(403).json({ message: "You don't have permission to delete this post" });
     }
@@ -198,7 +214,7 @@ export const likePost = async (req, res) => {
     const userId = req.user._id;
     
     // Check if already liked
-    if (post.likes.includes(userId)) {
+    if (post.likes.some(id => id.toString() === userId.toString())) {
       return res.status(400).json({ message: "Post already liked" });
     }
 
@@ -221,12 +237,12 @@ export const unlikePost = async (req, res) => {
     const userId = req.user._id;
     
     // Check if not liked
-    if (!post.likes.includes(userId)) {
+    if (!post.likes.some(id => id.toString() === userId.toString())) {
       return res.status(400).json({ message: "Post not liked" });
     }
 
     // Remove like
-    post.likes = post.likes.filter(id => !id.equals(userId));
+    post.likes = post.likes.filter(id => id.toString() !== userId.toString());
     await post.save();
 
     res.json({ message: "Post unliked successfully" });

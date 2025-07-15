@@ -2,6 +2,7 @@ import express from "express";
 import { 
   getAllPosts, 
   getUserPosts, 
+  getPostsByUserId,
   getSinglePost, 
   createPost, 
   updatePost, 
@@ -17,11 +18,14 @@ const router = express.Router();
 
 // Public routes
 router.get("/", getAllPosts);
-router.get("/:id", getSinglePost);
+router.get("/user/:userId", getPostsByUserId);
 
-// Protected routes
+// Protected routes - specific routes first
 router.get("/user/posts", authMiddleware, getUserPosts);
 router.post("/", authMiddleware, upload.array('images', 5), createPost);
+
+// Dynamic routes - these should come after specific routes
+router.get("/:id", getSinglePost);
 router.put("/:id", authMiddleware, upload.array('images', 5), updatePost);
 router.delete("/:id", authMiddleware, deletePost);
 router.delete("/:id/images/:imageIndex", authMiddleware, deletePostImage);

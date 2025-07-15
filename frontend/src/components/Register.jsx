@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
@@ -23,11 +24,22 @@ export default function Register() {
       alert("Password must be at least 6 characters");
       return;
     }
+    if (username.length < 3 || username.length > 30) {
+      alert("Username must be between 3 and 30 characters");
+      return;
+    }
     const response = await axios.post("http://localhost:3002/user/register", {
       email,
+      username,
       password,
     });
     console.log(response.data);
+    // Store user data for comment author checking
+    if (response.data.user) {
+      localStorage.setItem("userId", response.data.user._id);
+      localStorage.setItem("userEmail", response.data.user.email);
+      localStorage.setItem("username", response.data.user.username);
+    }
     navigate("/login");
   }
 
@@ -45,6 +57,17 @@ export default function Register() {
           placeholder="Email"
           onChange={(e) => setEmail(e.target.value)}
           className="w-full mb-3 p-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+          required
+        />
+
+        <input
+          type="text"
+          name="username"
+          placeholder="Username"
+          onChange={(e) => setUsername(e.target.value)}
+          className="w-full mb-3 p-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
+          minLength={3}
+          maxLength={30}
           required
         />
 

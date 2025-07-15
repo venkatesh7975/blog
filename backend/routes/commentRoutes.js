@@ -4,6 +4,8 @@ import {
   createComment,
   updateComment,
   deleteComment,
+  getCommentReplies,
+  createReply,
 } from "../controllers/commentController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
@@ -12,8 +14,14 @@ const router = express.Router();
 // Get all comments for a specific post (public)
 router.get("/post/:postId", getCommentsByPost);
 
+// Get replies for a specific comment (public)
+router.get("/:commentId/replies", getCommentReplies);
+
 // Create a comment (protected)
 router.post("/", authMiddleware, createComment);
+
+// Create a reply to a comment (protected)
+router.post("/:commentId/reply", authMiddleware, createReply);
 
 // Update a comment by id (protected)
 router.put("/:id", authMiddleware, updateComment);

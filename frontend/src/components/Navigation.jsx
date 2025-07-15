@@ -16,6 +16,9 @@ export default function Navigation() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("username");
     setIsLoggedIn(false);
     setUser(null);
     navigate("/login");
@@ -39,6 +42,12 @@ export default function Navigation() {
                   className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   Posts
+                </Link>
+                <Link
+                  to="/search"
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Search Users
                 </Link>
                 <Link
                   to="/posts/create"

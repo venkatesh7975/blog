@@ -11,6 +11,9 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [editUsername, setEditUsername] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   useEffect(() => {
     fetchUserData();
@@ -108,6 +111,32 @@ export default function Profile() {
     }
   };
 
+  const handleEditProfile = () => {
+    setEditUsername(user.username);
+    setEditEmail(user.email);
+    setEditing(true);
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.put("http://localhost:3002/user/profile", {
+        username: editUsername,
+        email: editEmail,
+      }, {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+
+      setUser(prev => ({ ...prev, ...response.data.user }));
+      setEditing(false);
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      setError(err.response?.data?.message || "Failed to update profile. Please try again.");
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -165,7 +194,7 @@ export default function Profile() {
                 />
               ) : (
                 <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {user?.email?.charAt(0).toUpperCase() || "U"}
+                  {user?.username?.charAt(0).toUpperCase() || "U"}
                 </div>
               )}
               
@@ -186,9 +215,10 @@ export default function Profile() {
             
             <div className="flex-1">
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                {user?.email}
+                @{user?.username}
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-1">{user?.email}</p>
+              <p className="text-gray-500 text-sm mb-4">
                 Member since {formatDate(user?.createdAt)}
               </p>
               <div className="flex items-center space-x-4">
@@ -352,23 +382,76 @@ export default function Profile() {
                 Account Settings
               </h3>
               <div className="space-y-4">
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Email</h4>
-                  <p className="text-gray-600">{user?.email}</p>
-                </div>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Member Since</h4>
-                  <p className="text-gray-600">{formatDate(user?.createdAt)}</p>
-                </div>
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Account Actions</h4>
-                  <button
-                    onClick={handleLogout}
-                    className="text-red-600 hover:text-red-800 transition-colors"
-                  >
-                    Logout
-                  </button>
-                </div>
+                {editing ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                      <input
+                        type="text"
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minLength={3}
+                        maxLength={30}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={handleUpdateProfile}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        onClick={() => setEditing(false)}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Username</h4>
+                      <p className="text-gray-600">@{user?.username}</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Email</h4>
+                      <p className="text-gray-600">{user?.email}</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Member Since</h4>
+                      <p className="text-gray-600">{formatDate(user?.createdAt)}</p>
+                    </div>
+                    <div className="border border-gray-200 rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 mb-2">Account Actions</h4>
+                      <div className="space-y-2">
+                        <button
+                          onClick={handleEditProfile}
+                          className="text-blue-600 hover:text-blue-800 transition-colors mr-4"
+                        >
+                          Edit Profile
+                        </button>
+                        <button
+                          onClick={handleLogout}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

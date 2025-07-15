@@ -9,6 +9,8 @@ import SinglePost from "./components/SinglePost";
 import Navigation from "./components/Navigation";
 import Profile from "./components/Profile";
 import NotFound from "./components/NotFound";
+import UserSearch from "./components/UserSearch";
+import UserProfile from "./components/UserProfile";
 
 export default function App() {
   return (
@@ -37,6 +39,14 @@ export default function App() {
             />
             <Route path="/posts/:id" element={<SinglePost />} />
             <Route
+              path="/posts/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <SinglePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/profile"
               element={
                 <ProtectedRoute>
@@ -44,6 +54,15 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/search"
+              element={
+                <ProtectedRoute>
+                  <UserSearch />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/user/:userId" element={<UserProfile />} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -7,29 +7,51 @@ import path from 'path';
 
 export async function onRegister(req, res) {
   try {
-    const { email, password } = req.body;
+    const { email, username, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+    if (!email || !username || !password) {
+      return res.status(400).json({ message: "Email, username and password are required" });
     }
 
     if (password.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters" });
     }
 
-    const userEmail = await User.findOne({ email });
+    if (username.length < 3 || username.length > 30) {
+      return res.status(400).json({ message: "Username must be between 3 and 30 characters" });
+    }
 
-    if (userEmail) {
-      return res.status(400).json({ message: "User already exists" });
+    // Check if email or username already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
+    if (existingUser) {
+      if (existingUser.email === email) {
+        return res.status(400).json({ message: "Email already exists" });
+      } else {
+        return res.status(400).json({ message: "Username already exists" });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email: email, passwordhash: hashedPassword });
+    const user = new User({ 
+      email: email, 
+      username: username,
+      passwordhash: hashedPassword 
+    });
     
     const result = await user.save();
     await sendMail(email);
     
-    res.status(201).json({ message: "User registered successfully", user: { email: result.email, _id: result._id } });
+    res.status(201).json({ 
+      message: "User registered successfully", 
+      user: { 
+        email: result.email, 
+        username: result.username,
+        _id: result._id 
+      } 
+    });
   } catch (err) {
     console.error("Registration error:", err);
     res.status(500).json({ message: "Failed to register user", error: err.message });
@@ -60,7 +82,11 @@ export async function onLogin(req, res) {
     
     res.json({ 
       token: token,
-      user: { email: user.email, _id: user._id }
+      user: { 
+        email: user.email, 
+        username: user.username,
+        _id: user._id 
+      }
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -74,8 +100,8 @@ export async function getUserProfile(req, res) {
     const userId = req.user._id;
     const user = await User.findById(userId)
       .select("-passwordhash")
-      .populate("followers", "email profilePicture")
-      .populate("following", "email profilePicture");
+      .populate("followers", "email username profilePicture")
+      .populate("following", "email username profilePicture");
     
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -85,6 +111,52 @@ export async function getUserProfile(req, res) {
   } catch (err) {
     console.error("Get profile error:", err);
     res.status(500).json({ message: "Failed to get profile", error: err.message });
+  }
+}
+
+// PUT /user/profile - Update user profile
+export async function updateProfile(req, res) {
+  try {
+    const userId = req.user._id;
+    const { username, email } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if username is being changed and if it's already taken
+    if (username && username !== user.username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+      user.username = username;
+    }
+
+    // Check if email is being changed and if it's already taken
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already exists" });
+      }
+      user.email = email;
+    }
+
+    await user.save();
+    
+    res.json({ 
+      message: "Profile updated successfully",
+      user: {
+        email: user.email,
+        username: user.username,
+        profilePicture: user.profilePicture,
+        _id: user._id
+      }
+    });
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ message: "Failed to update profile", error: err.message });
   }
 }
 
@@ -238,8 +310,8 @@ export async function getUserById(req, res) {
     const userId = req.params.userId;
     const user = await User.findById(userId)
       .select("-passwordhash")
-      .populate("followers", "email profilePicture")
-      .populate("following", "email profilePicture");
+      .populate("followers", "email username profilePicture")
+      .populate("following", "email username profilePicture");
     
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -249,6 +321,31 @@ export async function getUserById(req, res) {
   } catch (err) {
     console.error("Get user by ID error:", err);
     res.status(500).json({ message: "Failed to get user", error: err.message });
+  }
+}
+
+// GET /user/search?q=query - Search users by username
+export async function searchUsers(req, res) {
+  try {
+    const { q } = req.query;
+    const currentUserId = req.user._id;
+
+    if (!q || q.trim().length === 0) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    const searchQuery = q.trim();
+    const users = await User.find({
+      username: { $regex: searchQuery, $options: 'i' },
+      _id: { $ne: currentUserId } // Exclude current user from search results
+    })
+      .select("username email profilePicture")
+      .limit(10);
+
+    res.json(users);
+  } catch (err) {
+    console.error("Search users error:", err);
+    res.status(500).json({ message: "Failed to search users", error: err.message });
   }
 }
 

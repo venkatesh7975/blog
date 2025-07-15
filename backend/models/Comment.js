@@ -17,6 +17,23 @@ const commentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    parentCommentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+      default: null, // null means it's a top-level comment
+    },
+    replies: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+    }],
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true } // adds createdAt and updatedAt
 );

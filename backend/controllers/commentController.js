@@ -1,33 +1,74 @@
 import Comment from "../models/Comment.js";
 
-// Get all comments for a post
+// Get all comments for a post (including replies)
 export const getCommentsByPost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const comments = await Comment.find({ postId })
-      .populate("userId", "email")
+    
+    // Get top-level comments (not replies)
+    const topLevelComments = await Comment.find({ 
+      postId, 
+      parentCommentId: null,
+      isDeleted: false 
+    })
+      .populate("userId", "email username profilePicture")
+      .populate({
+        path: "replies",
+        populate: {
+          path: "userId",
+          select: "email username profilePicture"
+        }
+      })
       .sort({ createdAt: -1 });
 
-    res.json(comments);
+    res.json(topLevelComments);
   } catch (error) {
     res.status(500).json({ message: "Failed to get comments", error: error.message });
   }
 };
 
-// Create a comment on a post
+// Create a comment on a post (or reply to another comment)
 export const createComment = async (req, res) => {
   try {
-    const { postId, content } = req.body;
+    const { postId, content, parentCommentId } = req.body;
     const userId = req.user._id; // from auth middleware
 
     if (!content || !postId) {
       return res.status(400).json({ message: "Content and postId are required" });
     }
 
-    const comment = new Comment({ postId, userId, content });
-    const savedComment = await comment.save();
+    if (content.trim().length === 0) {
+      return res.status(400).json({ message: "Comment content cannot be empty" });
+    }
 
-    res.status(201).json(savedComment);
+    // If this is a reply, verify the parent comment exists
+    if (parentCommentId) {
+      const parentComment = await Comment.findById(parentCommentId);
+      if (!parentComment || parentComment.isDeleted) {
+        return res.status(404).json({ message: "Parent comment not found" });
+      }
+    }
+
+    const comment = new Comment({ 
+      postId, 
+      userId, 
+      content: content.trim(),
+      parentCommentId: parentCommentId || null
+    });
+    const savedComment = await comment.save();
+    
+    // If this is a reply, add it to the parent comment's replies array
+    if (parentCommentId) {
+      await Comment.findByIdAndUpdate(parentCommentId, {
+        $push: { replies: savedComment._id }
+      });
+    }
+    
+    // Populate the user data for the response
+    const populatedComment = await Comment.findById(savedComment._id)
+      .populate("userId", "email username profilePicture");
+
+    res.status(201).json(populatedComment);
   } catch (error) {
     res.status(500).json({ message: "Failed to create comment", error: error.message });
   }
@@ -40,43 +81,122 @@ export const updateComment = async (req, res) => {
     const { content } = req.body;
     const userId = req.user._id;
 
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ message: "Comment content cannot be empty" });
+    }
+
     const comment = await Comment.findById(id);
-    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    if (!comment || comment.isDeleted) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
 
-if (!comment.userId || !userId || !comment.userId.equals(userId)) {
-  return res
-    .status(403)
-    .json({ message: "Not authorized to update this comment" });
-}
+    // Check if the user owns the comment
+    if (!comment.userId || !userId || !comment.userId.equals(userId)) {
+      return res.status(403).json({ message: "Not authorized to update this comment" });
+    }
 
-
-
-    comment.content = content ?? comment.content;
+    comment.content = content.trim();
     const updatedComment = await comment.save();
+    
+    // Populate the user data for the response
+    const populatedComment = await Comment.findById(updatedComment._id)
+      .populate("userId", "email username profilePicture");
 
-    res.json(updatedComment);
+    res.json(populatedComment);
   } catch (error) {
     res.status(500).json({ message: "Failed to update comment", error: error.message });
   }
 };
 
-// Delete a comment by id
+// Soft delete a comment by id
 export const deleteComment = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
 
     const comment = await Comment.findById(id);
-    if (!comment) return res.status(404).json({ message: "Comment not found" });
+    if (!comment || comment.isDeleted) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
 
-  if (!comment.userId || !userId || !comment.userId.equals(userId)) {
-  return res.status(403).json({ message: "Not authorized to delete this comment" });
-}
+    // Check if the user owns the comment
+    if (!comment.userId || !userId || !comment.userId.equals(userId)) {
+      return res.status(403).json({ message: "Not authorized to delete this comment" });
+    }
 
+    // Soft delete the comment
+    comment.isDeleted = true;
+    comment.deletedAt = new Date();
+    comment.content = "[This comment has been deleted]";
+    await comment.save();
 
-    await comment.deleteOne();
-    res.json({ message: "Comment deleted" });
+    res.json({ message: "Comment deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Failed to delete comment", error: error.message });
+  }
+};
+
+// Get replies for a specific comment
+export const getCommentReplies = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    
+    const comment = await Comment.findById(commentId);
+    if (!comment || comment.isDeleted) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    const replies = await Comment.find({
+      _id: { $in: comment.replies },
+      isDeleted: false
+    })
+      .populate("userId", "email username profilePicture")
+      .sort({ createdAt: 1 });
+
+    res.json(replies);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to get replies", error: error.message });
+  }
+};
+
+// Create a reply to a comment
+export const createReply = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { content } = req.body;
+    const userId = req.user._id;
+
+    if (!content || content.trim().length === 0) {
+      return res.status(400).json({ message: "Reply content cannot be empty" });
+    }
+
+    // Find the parent comment
+    const parentComment = await Comment.findById(commentId);
+    if (!parentComment || parentComment.isDeleted) {
+      return res.status(404).json({ message: "Parent comment not found" });
+    }
+
+    // Create the reply
+    const reply = new Comment({
+      postId: parentComment.postId,
+      userId,
+      content: content.trim(),
+      parentCommentId: commentId
+    });
+
+    const savedReply = await reply.save();
+
+    // Add the reply to the parent comment's replies array
+    await Comment.findByIdAndUpdate(commentId, {
+      $push: { replies: savedReply._id }
+    });
+
+    // Populate the user data for the response
+    const populatedReply = await Comment.findById(savedReply._id)
+      .populate("userId", "email username profilePicture");
+
+    res.status(201).json(populatedReply);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to create reply", error: error.message });
   }
 };
